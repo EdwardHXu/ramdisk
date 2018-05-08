@@ -1,9 +1,4 @@
 #include <stdlib.h>
-#ifdef DEBUG
-#include <string.h>
-#include <unistd.h>
-#include <pthread.h>
-#endif
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -12,10 +7,10 @@
 #include "ramdisk_module.h"
 
 static int rd_init(void);
+
 static int rdfd = -1;
 
-int rd_init()
-{
+int rd_init() {
     int rdfile = -1, retval = -1;
     if (rdfd != -1)
         return 0;
@@ -28,8 +23,7 @@ int rd_init()
     return retval;
 }
 
-int rd_creat(char *pathname)
-{
+int rd_creat(char *pathname) {
     int ret = 0;
     if (rd_init() < 0)
         return -1;
@@ -38,8 +32,7 @@ int rd_creat(char *pathname)
     return ret;
 }
 
-int rd_mkdir(char *pathname)
-{
+int rd_mkdir(char *pathname) {
     int ret = 0;
     if (rd_init() < 0)
         return -1;
@@ -49,8 +42,7 @@ int rd_mkdir(char *pathname)
     return ret;
 }
 
-int rd_open(char *pathname)
-{
+int rd_open(char *pathname) {
     int ret = 0;
     if (rd_init() < 0)
         return -1;
@@ -59,8 +51,7 @@ int rd_open(char *pathname)
     return ret;
 }
 
-int rd_close(int fd)
-{
+int rd_close(int fd) {
     int ret = 0;
     if (rd_init() < 0)
         return -1;
@@ -69,8 +60,7 @@ int rd_close(int fd)
     return ret;
 }
 
-int rd_read(int fd, char *address, int num_bytes)
-{
+int rd_read(int fd, char *address, int num_bytes) {
     int ret = 0;
     rd_rwfile_arg_t arg = {
             .address = address,
@@ -84,8 +74,7 @@ int rd_read(int fd, char *address, int num_bytes)
     return ret;
 }
 
-int rd_write(int fd, char *address, int num_bytes)
-{
+int rd_write(int fd, char *address, int num_bytes) {
     int ret = 0;
     rd_rwfile_arg_t arg = {
             .address = address,
@@ -99,8 +88,7 @@ int rd_write(int fd, char *address, int num_bytes)
     return ret;
 }
 
-int rd_lseek(int fd, int offset)
-{
+int rd_lseek(int fd, int offset) {
     int ret = 0;
     rd_seek_arg_t arg = {
             .fd = fd,
@@ -113,8 +101,7 @@ int rd_lseek(int fd, int offset)
     return ret;
 }
 
-int rd_unlink(char *pathname)
-{
+int rd_unlink(char *pathname) {
     int ret = 0;
     if (rd_init() < 0)
         return -1;
@@ -123,8 +110,7 @@ int rd_unlink(char *pathname)
     return ret;
 }
 
-int rd_readdir(int fd, char *address)
-{
+int rd_readdir(int fd, char *address) {
     int ret = 0;
     rd_readdir_arg_t arg = {
             .address = address,
@@ -136,24 +122,3 @@ int rd_readdir(int fd, char *address)
         perror("rd_readdir\n");
     return ret;
 }
-
-#ifdef DEBUG
-int main(int argc, char *argv[])
-{
-
-  printf("%d\n", rd_unlink("/dir1/dir2"));
-  /* char pathname[80] = {'\0'}; */
-  /* char buf[80] = {'\0'}; */
-  /* int i = 0, handle = -1; */
-  /* FILE *fl; */
-  /* rd_init(); */
-
-  /* handle = rd_open("/"); */
-
-  /* for (i = 0; i < 600; i++) { */
-  /*   printf("%d %s | ", rd_readdir(handle, buf), buf); */
-  /* } */
-
-  return 0;
-}
-#endif

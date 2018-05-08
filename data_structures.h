@@ -21,12 +21,6 @@
 
 
 //define data structures here
-typedef struct offset_info {
-    void *block_start;
-    void *data_start; // Address of byte at offset into file
-    void *block_end; // Last byte in block is at (block_end - 1)
-} offset_info_t;
-
 typedef struct rd_super_block {
     int num_free_blocks;
     int num_free_inodes;
@@ -35,9 +29,7 @@ typedef struct rd_super_block {
 
 typedef enum FILE_TYPE {
     UNALLOCATED = 0,
-    ALLOCATED, /* Intermediary stage inode is in when
-       * obtained by rd_creat or rd_mkdir
-       * functions */
+    ALLOCATED,
     DIR,
     REG
 } file_type_t;
@@ -53,16 +45,16 @@ typedef struct double_indirect_block_t {
 typedef struct index_node {
     file_type_t type;
     int size;
-    atomic_t open_count; // Used to allow readers to increment open_count
-    rwlock_t file_lock; // sizeof(rwlock_t) == 4
+    atomic_t open_count;    // Used to allow readers to increment open_count
+    rwlock_t file_lock;     // sizeof(rwlock_t) == 4
     void *direct[DIRECT];
     indirect_block_t *single_indirect;
     double_indirect_block_t *double_indirect;
-} index_node_t; //sizeof(index_node_t) == 52
+} index_node_t;             //sizeof(index_node_t) == 52?
 
 typedef struct directory_entry {
-    char filename[MAX_FILE_NAME_LEN]; /* 14 bytes including null terminator */
-    unsigned short index_node_number; // 2 bytes
+    char filename[MAX_FILE_NAME_LEN];   // 14 bytes including null terminator
+    unsigned short index_node_number;   // 2 bytes
 } directory_entry_t;
 
 typedef struct file_object {
