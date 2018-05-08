@@ -13,50 +13,12 @@
 #include <linux/errno.h> /* error codes */
 #include <asm/uaccess.h> /* gives us get/put_user functions */
 #include "ramdisk_module.h"
-#include "data_structures.h"
+
 
 MODULE_LICENSE("GPL");
 
 // Forward declarations of ramdisk functions
-static int ramdisk_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg);
 
-static int rd_init(void);
-static bool rd_initialized(void);
-static int create_file_descriptor_table(pid_t pid);
-static file_descriptor_table_t *get_file_descriptor_table(pid_t pid);
-static void delete_file_descriptor_table(pid_t pid);
-static int create_file_descriptor_table_entry(file_descriptor_table_t *fdt, file_object_t fo);
-static file_object_t get_file_descriptor_table_entry(file_descriptor_table_t *fdt, unsigned short fd);
-static int set_file_descriptor_table_entry(file_descriptor_table_t *fdt, unsigned short fd, file_object_t fo);
-static int delete_file_descriptor_table_entry(file_descriptor_table_t *fdt, unsigned short fd);
-static size_t get_file_descriptor_table_size(file_descriptor_table_t *fdt, unsigned short fd);
-static index_node_t *get_free_index_node(void);
-static index_node_t *get_readlocked_parent_index_node(const char *pathname); // DOESNT TRASH PATHNAME
-static index_node_t *get_readlocked_index_node(const char *pathname);
-static index_node_t *get_inode(size_t no);
-static void *extend_inode(index_node_t *inode);
-static void *get_free_data_block(void);
-static void release_data_block(void *data_block_ptr);
-static directory_entry_t *get_directory_entry(index_node_t *inode, int index);
-static void *get_byte_address(index_node_t *inode, int offset);
-
-static int rd_creat(const char *usr_str);
-static int rd_mkdir(const char *usr_str);
-static int rd_open(const pid_t pid, const char *usr_str);
-static int rd_close(const pid_t pid, const int fd);
-static int rd_read(const pid_t pid, const rd_rwfile_arg_t *usr_arg);
-static int rd_write(const pid_t pid, const rd_rwfile_arg_t *usr_arg);
-static int rd_lseek(const pid_t pid, const rd_seek_arg_t *usr_arg);
-static int rd_unlink(const char *usr_str);
-static int rd_readdir(const pid_t pid, const rd_readdir_arg_t *usr_arg);
-
-/* *** Debug Functions *** */
-static void debug_print_fdt_pids(void);
-
-/* *** Declarations of procfs data routines */
-static int procfs_open(struct inode *inode, struct file *file);
-
-static int procfs_close(struct inode *inode, struct file *file);
 
 static struct file_operations ramdisk_file_ops = {
         .owner = THIS_MODULE,
@@ -178,7 +140,6 @@ static void __exit cleanup_routine(void) {
  */
 static int ramdisk_ioctl(struct inode *inode, struct file *filp,
                          unsigned int cmd, unsigned long arg) {
-    offset_info_t offset_info;
     //  printk(KERN_INFO "Called ioctl\n");
     if (cmd != RD_INIT && !rd_initialized()) {
         printk(KERN_ERR
