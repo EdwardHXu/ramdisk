@@ -3,6 +3,8 @@
  * ioctls
  *
  */
+#ifndef RAMDISK_MODULE_H
+#define RAMDISK_MODULE_H
 #include <linux/ioctl.h>
 
 typedef struct rd_rwfile_arg {
@@ -37,4 +39,4 @@ typedef struct rd_readdir_arg {
 #define DBG_MK_FDT _IO(MAJOR_NUM, 9 + 2)
 #define DBG_RM_FDT _IO(MAJOR_NUM, 9 + 3)
 #define DBG_TEST_OFFSET_INFO _IO(MAJOR_NUM, 9 + 4)
-
+#endif

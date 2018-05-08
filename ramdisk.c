@@ -1,4 +1,9 @@
 #include <stdlib.h>
+#ifdef DEBUG
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+#endif
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -131,3 +136,24 @@ int rd_readdir(int fd, char *address)
         perror("rd_readdir\n");
     return ret;
 }
+
+#ifdef DEBUG
+int main(int argc, char *argv[])
+{
+
+  printf("%d\n", rd_unlink("/dir1/dir2"));
+  /* char pathname[80] = {'\0'}; */
+  /* char buf[80] = {'\0'}; */
+  /* int i = 0, handle = -1; */
+  /* FILE *fl; */
+  /* rd_init(); */
+
+  /* handle = rd_open("/"); */
+
+  /* for (i = 0; i < 600; i++) { */
+  /*   printf("%d %s | ", rd_readdir(handle, buf), buf); */
+  /* } */
+
+  return 0;
+}
+#endif
