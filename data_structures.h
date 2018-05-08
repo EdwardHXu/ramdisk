@@ -1,3 +1,5 @@
+#include <linux/list.h>
+
 //define some constants here
 #define RD_SIZE 0x200000    //2MB
 #define BLOCK_SIZE 256
