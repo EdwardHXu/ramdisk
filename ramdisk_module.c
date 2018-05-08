@@ -47,7 +47,6 @@ static int rd_write(const pid_t pid, const rd_rwfile_arg_t *usr_arg);
 static int rd_lseek(const pid_t pid, const rd_seek_arg_t *usr_arg);
 static int rd_unlink(const char *usr_str);
 static int rd_readdir(const pid_t pid, const rd_readdir_arg_t *usr_arg);
-static void debug_print_fdt_pids(void);
 static int procfs_open(struct inode *inode, struct file *file);
 static int procfs_close(struct inode *inode, struct file *file);
 
@@ -173,15 +172,6 @@ static int ramdisk_ioctl(struct inode *inode, struct file *filp, unsigned int cm
             return rd_unlink((char *) arg);
         case RD_READDIR:
             return rd_readdir(current->pid, (rd_readdir_arg_t *) arg);
-        case DBG_PRINT_FDT_PIDS:
-            debug_print_fdt_pids();
-            break;
-        case DBG_MK_FDT:
-            create_file_descriptor_table(current->pid);
-            break;
-        case DBG_RM_FDT:
-            delete_file_descriptor_table((pid_t) arg);
-            break;
         default:
             printk("Unrecognized cmd %u\n", cmd);
             return -EINVAL;
@@ -266,14 +256,6 @@ static void delete_file_descriptor_table(pid_t pid) {
     kfree(fdt);
 }
 
-static void debug_print_fdt_pids() {
-    file_descriptor_table_t *p;
-    read_lock(&file_descriptor_tables_rwlock);
-    list_for_each_entry(p, &file_descriptor_tables, list){
-        printk(KERN_DEBUG "process %d\n", p->owner);
-    }
-    read_unlock(&file_descriptor_tables_rwlock);
-}
 
 /*
  * Given a pointer to a process' file descriptor table, adds the given
