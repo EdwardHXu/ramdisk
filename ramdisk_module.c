@@ -262,17 +262,13 @@ static void delete_file_descriptor_table(pid_t pid) {
  * file object to the table, and returns the file descriptor corresponding
  * to this new entry, or -errno on error
  */
-static int create_file_descriptor_table_entry(file_descriptor_table_t *fdt,
-                                              file_object_t fo) {
+static int create_file_descriptor_table_entry(file_descriptor_table_t *fdt, file_object_t fo) {
     int entry_index = 0;
     file_object_t *p = NULL, *dest = NULL;
-    /* TODO: write_lock(fdt_rwlock) */
-    /* Check if we need to allocate larger array/copy over current array */
-    if (fdt->num_free_entries <= 0) {
-        /* TODO: write_unlock(fdt_rwlock) */
-        return -ENOMEM; /* TODO: in this case, try to allocate larger array/cpy old one */
-    }
-    /* Search for empty entry in array, assumes that all empty entries are null'd out */
+    // Check if we need to allocate larger array/copy over current array
+    if (fdt->num_free_entries <= 0)
+        return -ENOMEM;
+    // Search for empty entry in array, assumes that all empty entries are null
     for (entry_index = 0; entry_index < fdt->entries_length; entry_index++) {
         p = (fdt->entries) + entry_index;
         if (p->index_node == NULL) {
@@ -280,11 +276,8 @@ static int create_file_descriptor_table_entry(file_descriptor_table_t *fdt,
             break;
         }
     }
-    if (dest == NULL) {
-        //printk(KERN_ERR "Couldn't find empty entry, despite num_free_entries returning\n");
-        /* write_unlock(fdt_rwlock) */
+    if (dest == NULL)
         return -ENOMEM;
-    }
     dest->index_node = fo.index_node;
     dest->file_position = fo.file_position;
     return entry_index;
@@ -292,15 +285,12 @@ static int create_file_descriptor_table_entry(file_descriptor_table_t *fdt,
 
 /*
  * Returns the file_object associated with the given file descriptor in the given
- * file descriptor table. If the file descriptor is invalid, then a null file object
- * (all fields have NULL/0 value) is returned
+ * file descriptor table. If the file descriptor is invalid, then a null file object is returned
  */
 static file_object_t get_file_descriptor_table_entry(file_descriptor_table_t *fdt,
                                                      unsigned short fd) {
     file_object_t ret = {.index_node = NULL, .file_position = 0};
-    /* TODO: read_lock(fdt_rwlock) */
     if (fd >= (fdt->entries_length)) {
-        /* TODO: read_unlock(fdt_rwlock) */
         return ret;
     }
     ret.index_node = fdt->entries[fd].index_node;
@@ -311,56 +301,33 @@ static file_object_t get_file_descriptor_table_entry(file_descriptor_table_t *fd
 /*
  * Sets the file descriptor table entry assocated with the given file descriptor
  * to the given file_object value.
- *
- * Returns 0 on success, -errno on error
  */
-static int set_file_descriptor_table_entry(file_descriptor_table_t *fdt,
-                                           unsigned short fd, file_object_t fo) {
-    /* TODO: write_lock(fdt_rwlock) */
-    /* Check that the given file object has a valid index node pointer */
-    /* if ((unsigned long) fo.index_node < (unsigned long) index_nodes */
-    /*     || (unsigned long) fo.index_node >= (unsigned long) block_bitmap */
-    /*     || (((unsigned long) fo.index_node - (unsigned long)index_nodes) % INDEX_NODE_SIZE != 0) */
-    /*     || fd > fdt->entries_length) { */
-    /*   /\* TODO: write_unlock(fdt_rwlock) *\/ */
-    /*   return -EINVAL; */
-    /*} else*/
+static int set_file_descriptor_table_entry(file_descriptor_table_t *fdt, unsigned short fd, file_object_t fo) {
     if (fdt->entries[fd].index_node == NULL) {
         return -EINVAL;
     }
     fdt->entries[fd] = fo;
-    /* TODO: write_unlock(fdt_rwlock) */
     return 0;
-
 }
 
-/*
- * Deletes the file descriptor table entry assocated with the given file descriptor
- */
+// Deletes the file descriptor table entry assocated with the given file descriptor
 static int delete_file_descriptor_table_entry(file_descriptor_table_t *fdt,
                                               unsigned short fd) {
     file_object_t null_file_object = {.index_node = NULL, .file_position = 0};
     return set_file_descriptor_table_entry(fdt, fd, null_file_object);
 }
 
-static size_t get_file_descriptor_table_size(file_descriptor_table_t *fdt,
-                                             unsigned short fd) {
+static size_t get_file_descriptor_table_size(file_descriptor_table_t *fdt, unsigned short fd) {
     size_t fdt_size;
-    /* TODO: read_lock(fdt_rwlock) */
     fdt_size = fdt->entries_length - fdt->entries_length;
-    /* TODO: read_unlock(fdt_rwlock) */
     return fdt_size;
 }
 
-/* Returns a pointer to a free index_node_t, if one exists,
-   NULL on error
-*/
+// Returns a pointer to a free index_node_t, if one exists, NULL on error
 static index_node_t *get_free_index_node() {
     int i = 0, direct_ptr_index = 0;
     index_node_t *new_inode = NULL, *p = NULL;
-    /* Make sure there is a free inode/ decrement inodes counter in
-     * superblock
-     */
+    // make sure there is a free inode/ decrement inodes counter in superblock
     spin_lock(&super_block_spinlock);
     if (super_block->num_free_inodes == 0) {
         spin_unlock(&super_block_spinlock);
@@ -368,10 +335,9 @@ static index_node_t *get_free_index_node() {
     }
     super_block->num_free_inodes--;
     spin_unlock(&super_block_spinlock);
-    /* Look for an UNALLOCATED inode */
+    // Look for an UNALLOCATED inode
     for (i = 0; i < INDEX_NODES; i++) {
         p = get_inode(i);
-        //printk("Get_free_index_node checking if node %d (%p) is free\n", i,p);
         if (write_trylock(&p->file_lock)) {
             if (p->type == UNALLOCATED) {
                 new_inode = p;
@@ -389,68 +355,56 @@ static index_node_t *get_free_index_node() {
             }
         }
     }
-    /* We should have been able to find such an inode */
-    if (new_inode == NULL) {
-        //printk(KERN_ERR "get_free_index_node failed to find free inode,"
-        //	   " despite having first checked the super block counter: %d\n", super_block->num_free_inodes);
-    }
     return new_inode;
 }
 
-/*
- * Returns the index node of directory containing the file
- * indicated by pathname, or NULL on error.
- *
- * IMPORTANT: pathname should be a string in kernel space
- */
+
+// Returns the index node of directory containing the file indicated by pathname, or NULL on error.
 static index_node_t *get_readlocked_parent_index_node(const char *pathname) {
     char *pathname_copy = NULL, *filename = NULL;
     index_node_t *parent;
     filename = strrchr(pathname, '/');
     if (filename == NULL)
         return NULL;
-    if (strcmp(filename, pathname) == 0) { // Parent is root node
+    // if parent is root node
+    if (strcmp(filename, pathname) == 0) {
         read_lock(&index_nodes->file_lock);
         return index_nodes;
     }
     pathname_copy = (char *) kcalloc(strlen(pathname) + 1, sizeof(char), GFP_KERNEL);
     strncpy(pathname_copy, pathname, strlen(pathname) - strlen(filename));
     parent = get_readlocked_index_node(pathname_copy);
-    kfree(pathname_copy); //kfree does not sleep
+    kfree(pathname_copy);
     return parent;
 }
 
 static index_node_t *get_readlocked_index_node(const char *pathname) {
-
     char *pathname_copy, *token, *tokenize;
     index_node_t *curr = index_nodes, *prev = NULL;
     directory_entry_t *dir_entry = NULL;
     int i = 0;
-    bool found_prev_inode = true; // start with index_nodes
-
+    bool found_prev_inode = true;
+    // start with index_nodes
     if (strlen(pathname) == 1 && pathname[0] != '/') {
         return NULL;
     }
     if (strlen(pathname) == 1 && pathname[0] == '/') {
         read_lock(&index_nodes->file_lock);
-        return index_nodes; // Points to root index node
+        return index_nodes;         // points to root index node
     }
 
     pathname_copy = (char *) kcalloc(strlen(pathname) + 1, sizeof(char), GFP_KERNEL);
     strncpy(pathname_copy, pathname, strlen(pathname));
-    tokenize = pathname_copy + 1; // skip the first forward slash
+    tokenize = pathname_copy + 1;   // skip the first forward slash
 
     read_lock(&curr->file_lock);
     while ((token = strsep(&tokenize, "/")) != NULL) {
         if (curr->type != DIR || !found_prev_inode) {
-            //printk("Breaking out\n");
             break;
         }
-        //printk("Token is %s\n", token);
         found_prev_inode = false;
         for (i = 0; i < curr->size / sizeof(directory_entry_t); i++) {
             dir_entry = get_byte_address(curr, i * sizeof(directory_entry_t));
-            //printk("Comparing to %s\n", dir_entry->filename);
             if (strncmp(dir_entry->filename, token, MAX_FILE_NAME_LEN) == 0) {
                 found_prev_inode = true;
                 prev = curr;
@@ -463,14 +417,14 @@ static index_node_t *get_readlocked_index_node(const char *pathname) {
     }
     kfree(pathname_copy);
     if (!(token == NULL && found_prev_inode)) {
-        read_unlock(&curr->file_lock); //curr is not the droids we're looking for
+        read_unlock(&curr->file_lock);
         return NULL;
     } else
         return curr;
 }
 
 /*
-  To be called -only- on behalf of processes that have already opened
+  To be called only on behalf of processes that have already opened
   the index node corresponding to the given index (that is, the returned
   index node does not come read-locked
  */
@@ -478,26 +432,24 @@ static index_node_t *get_inode(size_t index) {
     return (index_node_t *) (((void *) index_nodes) + INDEX_NODE_SIZE * index);
 }
 
-/*
- * Intended to be called with write lock held!
- */
+
+// to be called with write lock held!
 static void *extend_inode(index_node_t *inode) {
     void *extending_block;
     if (inode->size >= MAX_FILE_SIZE - BLOCK_SIZE + 1) {
-        /* There's no room for another block for this
-           file */
+        // there's no room for another block for this file
         return NULL;
     }
 
-    /* Get new data block to extend inode with */
+    // Get new data block to extend inode with
     extending_block = get_free_data_block();
     if (inode->size < DIRECT * BLOCK_SIZE) {
-        /* Can link to new block from one of the DIRECT pointers */
+        // Can link to new block from one of the DIRECT pointers
         inode->direct[inode->size / BLOCK_SIZE] = extending_block;
     } else if (inode->size < BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) {
-        /* Can link to new block from one of the INDIRECT pointers */
+        // Can link to new block from one of the INDIRECT pointers
         if (inode->size == DIRECT * BLOCK_SIZE) {
-            /* Need to make the INDIRECT block */
+            // Need to make the INDIRECT block
             indirect_block_t *indirect_block = get_free_data_block();
             if (indirect_block == NULL) {
                 return NULL;
@@ -505,15 +457,13 @@ static void *extend_inode(index_node_t *inode) {
             inode->single_indirect = indirect_block;
             indirect_block->data[0] = (void *) extending_block;
         } else {
-            /* Indirect block already exists */
-            inode->single_indirect->
-                    data[(inode->size / BLOCK_SIZE) - DIRECT] = (void *) extending_block;
+            // Indirect block already exists
+            inode->single_indirect->data[(inode->size / BLOCK_SIZE) - DIRECT] = (void *) extending_block;
         }
     } else {
-        /* Need to link to new block from an INDIRECT block, that is
-           pointed to from the DOUBLE_INDIRECT block */
+        // Need to link to new block from an INDIRECT block, that is pointed to from the DOUBLE_INDIRECT block
         if (inode->size == BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) {
-            /* Need to create the DOUBLE INDIRECT block */
+            // Need to create the DOUBLE INDIRECT block
             double_indirect_block_t *double_indirect_block = get_free_data_block();
             indirect_block_t *indirect_block = get_free_data_block();
             if (indirect_block == NULL || double_indirect_block == NULL) {
@@ -528,7 +478,7 @@ static void *extend_inode(index_node_t *inode) {
             double_indirect_block->indirect_blocks[0] = indirect_block;
             indirect_block->data[0] = (void *) extending_block;
         } else if ((inode->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE) != 0) {
-            /* Can point to the new block from  a prexisting indirect block */
+            // Can point to the new block from  a prexisting indirect block
             int indirect_block_index =
                     (inode->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) / (POINTER_PER_BLOCK * BLOCK_SIZE);
             int index_in_indirect_block =
@@ -536,7 +486,7 @@ static void *extend_inode(index_node_t *inode) {
             inode->double_indirect->indirect_blocks[indirect_block_index]
                     ->data[index_in_indirect_block] = (void *) extending_block;
         } else if ((inode->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE) == 0) {
-            /* Need to create a new indirect block to point to the new block */
+            // Need to create a new indirect block to point to the new block
             indirect_block_t *indirect_block = get_free_data_block();
             if (indirect_block == NULL) {
                 release_data_block(extending_block);
@@ -550,15 +500,14 @@ static void *extend_inode(index_node_t *inode) {
             inode->double_indirect->indirect_blocks[indirect_block_index]
                     ->data[index_in_indirect_block] = (void *) extending_block;
         } else {
-            printk(KERN_ERR
-            "Encountered unexpected case in extend_inode\n");
+            printk(KERN_ERR "Encountered unexpected case in extend_inode\n");
             return NULL;
         }
     }
     return extending_block;
 }
 
-/* Intended to be called with readlock held */
+// to be called with readlock held
 static directory_entry_t *get_directory_entry(index_node_t *inode, int index) {
     if (inode->type != DIR || inode->size / DIR_ENTRY_SIZE <= index) {
         return NULL;
@@ -566,10 +515,8 @@ static directory_entry_t *get_directory_entry(index_node_t *inode, int index) {
     return (directory_entry_t *) get_byte_address(inode, index * sizeof(directory_entry_t));
 }
 
-/*
- * Returns a pointer to a free data block, or NULL if one is
- * not available
- */
+
+// returns a pointer to a free data block, or NULL if one is not available
 static void *get_free_data_block() {
     unsigned long block_num = 0;
     void *block_address = NULL;
@@ -583,8 +530,6 @@ static void *get_free_data_block() {
     spin_lock(&block_bitmap_spinlock);
     block_num = find_first_zero_bit(block_bitmap, BLOCK_BITMAPS * BLOCK_SIZE * 8);
     if (block_num == BLOCK_BITMAPS * BLOCK_SIZE * 8) {
-        //printk(KERN_ERR "Uh oh. The super block said there was a free block, "
-        //   "but the block bitmap says otherwise...\n");
         spin_unlock(&block_bitmap_spinlock);
         return NULL;
     }
@@ -597,13 +542,12 @@ static void *get_free_data_block() {
 
 /*
  *  Frees the data block pointed to by data_block_ptr to be
- *  re-allocated. DO NOT CALL THIS FUNCTION WHILE HOLDNG
- *  super_block_spinlock OR block_bitmap_spinlock
+ *  re-allocated. NEVER CALL THIS FUNCTION while holding
+ *  super_block_spinlock OR block_bitmap_spinlock!
  */
 static void release_data_block(void *data_block_ptr) {
     int block_num;
     if (data_block_ptr == NULL) {
-        //printk(KERN_ERR "Asked to release NULL data block\n");
         return;
     }
     block_num = (data_block_ptr - data_blocks) / BLOCK_SIZE;
@@ -616,7 +560,8 @@ static void release_data_block(void *data_block_ptr) {
     return;
 }
 
-/**
+
+/*
  *
  * Functions for implementing the ramdisk API
  *
