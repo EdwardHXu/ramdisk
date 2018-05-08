@@ -7,8 +7,23 @@
 #include <linux/ioctl.h>
 #include "data_structures.h"
 
-static int ramdisk_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg);
+typedef struct rd_rwfile_arg {
+    char *address;
+    int fd;
+    int num_bytes;
+} rd_rwfile_arg_t;
 
+typedef struct rd_seek_arg {
+    int fd;
+    int offset;
+} rd_seek_arg_t;
+
+typedef struct rd_readdir_arg {
+    char *address;
+    int fd;
+} rd_readdir_arg_t;
+
+static int ramdisk_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg);
 static int rd_init(void);
 static bool rd_initialized(void);
 static int create_file_descriptor_table(pid_t pid);
@@ -41,21 +56,6 @@ static void debug_print_fdt_pids(void);
 static int procfs_open(struct inode *inode, struct file *file);
 static int procfs_close(struct inode *inode, struct file *file);
 
-typedef struct rd_rwfile_arg {
-    char *address;
-    int fd;
-    int num_bytes;
-} rd_rwfile_arg_t;
-
-typedef struct rd_seek_arg {
-    int fd;
-    int offset;
-} rd_seek_arg_t;
-
-typedef struct rd_readdir_arg {
-    char *address;
-    int fd;
-} rd_readdir_arg_t;
 
 /* Major device number used for ioctls */
 #define MAJOR_NUM 100
