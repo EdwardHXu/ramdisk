@@ -123,60 +123,6 @@ RAMDISK/fast:
 	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/build
 .PHONY : RAMDISK/fast
 
-our_tests.o: our_tests.c.o
-
-.PHONY : our_tests.o
-
-# target to build an object file
-our_tests.c.o:
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/our_tests.c.o
-.PHONY : our_tests.c.o
-
-our_tests.i: our_tests.c.i
-
-.PHONY : our_tests.i
-
-# target to preprocess a source file
-our_tests.c.i:
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/our_tests.c.i
-.PHONY : our_tests.c.i
-
-our_tests.s: our_tests.c.s
-
-.PHONY : our_tests.s
-
-# target to generate assembly for a file
-our_tests.c.s:
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/our_tests.c.s
-.PHONY : our_tests.c.s
-
-prof_tests.o: prof_tests.c.o
-
-.PHONY : prof_tests.o
-
-# target to build an object file
-prof_tests.c.o:
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/prof_tests.c.o
-.PHONY : prof_tests.c.o
-
-prof_tests.i: prof_tests.c.i
-
-.PHONY : prof_tests.i
-
-# target to preprocess a source file
-prof_tests.c.i:
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/prof_tests.c.i
-.PHONY : prof_tests.c.i
-
-prof_tests.s: prof_tests.c.s
-
-.PHONY : prof_tests.s
-
-# target to generate assembly for a file
-prof_tests.c.s:
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/prof_tests.c.s
-.PHONY : prof_tests.c.s
-
 ramdisk.o: ramdisk.c.o
 
 .PHONY : ramdisk.o
@@ -231,32 +177,32 @@ ramdisk_module.c.s:
 	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/ramdisk_module.c.s
 .PHONY : ramdisk_module.c.s
 
-real_tests.o: real_tests.c.o
+test_file.o: test_file.c.o
 
-.PHONY : real_tests.o
+.PHONY : test_file.o
 
 # target to build an object file
-real_tests.c.o:
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/real_tests.c.o
-.PHONY : real_tests.c.o
+test_file.c.o:
+	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/test_file.c.o
+.PHONY : test_file.c.o
 
-real_tests.i: real_tests.c.i
+test_file.i: test_file.c.i
 
-.PHONY : real_tests.i
+.PHONY : test_file.i
 
 # target to preprocess a source file
-real_tests.c.i:
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/real_tests.c.i
-.PHONY : real_tests.c.i
+test_file.c.i:
+	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/test_file.c.i
+.PHONY : test_file.c.i
 
-real_tests.s: real_tests.c.s
+test_file.s: test_file.c.s
 
-.PHONY : real_tests.s
+.PHONY : test_file.s
 
 # target to generate assembly for a file
-real_tests.c.s:
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/real_tests.c.s
-.PHONY : real_tests.c.s
+test_file.c.s:
+	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/test_file.c.s
+.PHONY : test_file.c.s
 
 # Help Target
 help:
@@ -267,21 +213,15 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... RAMDISK"
-	@echo "... our_tests.o"
-	@echo "... our_tests.i"
-	@echo "... our_tests.s"
-	@echo "... prof_tests.o"
-	@echo "... prof_tests.i"
-	@echo "... prof_tests.s"
 	@echo "... ramdisk.o"
 	@echo "... ramdisk.i"
 	@echo "... ramdisk.s"
 	@echo "... ramdisk_module.o"
 	@echo "... ramdisk_module.i"
 	@echo "... ramdisk_module.s"
-	@echo "... real_tests.o"
-	@echo "... real_tests.i"
-	@echo "... real_tests.s"
+	@echo "... test_file.o"
+	@echo "... test_file.i"
+	@echo "... test_file.s"
 .PHONY : help
 
 

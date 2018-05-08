@@ -88,12 +88,6 @@
 		<Unit filename="/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/data_structures.h">
 			<Option target="RAMDISK"/>
 		</Unit>
-		<Unit filename="/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/our_tests.c">
-			<Option target="RAMDISK"/>
-		</Unit>
-		<Unit filename="/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/prof_tests.c">
-			<Option target="RAMDISK"/>
-		</Unit>
 		<Unit filename="/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/ramdisk.c">
 			<Option target="RAMDISK"/>
 		</Unit>
@@ -106,7 +100,7 @@
 		<Unit filename="/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/ramdisk_module.h">
 			<Option target="RAMDISK"/>
 		</Unit>
-		<Unit filename="/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/real_tests.c">
+		<Unit filename="/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/test_file.c">
 			<Option target="RAMDISK"/>
 		</Unit>
 		<Unit filename="/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/CMakeLists.txt">

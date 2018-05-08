@@ -81,25 +81,25 @@ static LIST_HEAD(file_descriptor_tables);
 #define BLOCK_START(byte_address) ((void *)byte_address - (((unsigned long) ((void *)byte_address - data_blocks)) % BLOCK_SIZE))
 #define BLOCK_END(byte_address) (BLOCK_START(byte_address) + BLOCK_SIZE)
 
-
-// setting up the /proc file system entry
+/*
+ *
+ *  setting up the /proc file system entry
+ *
+ *
+ */
 // increment usage count on /proc/ramdisk file open
 static int procfs_open(struct inode *inode, struct file *file) {
     try_module_get(THIS_MODULE);
     return 0;
 }
 
-/*
- * Decrement usage count on /proc/ramdisk file close
- */
-
+// decrement usage count on /proc/ramdisk file close
 static int procfs_close(struct inode *inode, struct file *file) {
     int i = 0;
     file_descriptor_table_t *fdt = NULL;
     file_object_t fo;
-    //printk(KERN_DEBUG "Ramdisk module being closed by %d (parent %d, real_parent %d, thread group %d)\n", current->pid, current->parent->pid, current->real_parent->pid, current->tgid);
     fdt = get_file_descriptor_table(current->pid);
-    /* Here, I assume that the no other thread will be accessing this fdt */
+    // assume that the no other thread will be accessing this fdt
     if (fdt != NULL) {
         for (i = 0; i < fdt->entries_length; i++) {
             fo = get_file_descriptor_table_entry(fdt, i);
@@ -117,60 +117,40 @@ static int procfs_close(struct inode *inode, struct file *file) {
 }
 
 static int __init initialization_routine(void) {
-    printk(KERN_INFO
-    "Loading ramdisk module\n");
+    printk(KERN_INFO "Loading ramdisk module\n");
     ramdisk_file_ops.ioctl = ramdisk_ioctl;
-
-    /* Start create proc entry */
+    // start create proc entry
     proc_entry = create_proc_entry("ramdisk", 0444, NULL);
     if (!proc_entry) {
-        //printk(KERN_ERR "Error creating /proc entry. \n");
+        printk(KERN_ERR "Error creating /proc entry. \n");
         return 1;
     }
     proc_entry->proc_fops = &ramdisk_file_ops;
-
     return 0;
 }
 
 static void __exit cleanup_routine(void) {
-    /* Because of the try_get_module and put_module
-     * calls in the procfs_open/close functions,
-     * no other thread should have access to this
-     * module while this is executing
-     */
     file_descriptor_table_t *p = NULL, *next = NULL;
     remove_proc_entry("ramdisk", NULL);
-    //printk(KERN_INFO "Cleaning up ramdisk module\n");
-    /* The only other persistent, dynamically allocated
-     * memory in the ramdisk is used for fdt's, all of
-     * which should have been destroyed in order for us
-     * to reach this point. We will double check anyways.
-     */
-    list_for_each_entry_safe(p, next, &file_descriptor_tables, list)
-    {
-        //printk(KERN_DEBUG "Deleting fdt for process %d\n", p->owner);
+    printk(KERN_INFO "Cleaning up ramdisk module\n");
+    list_for_each_entry_safe(p, next, &file_descriptor_tables, list){
         delete_file_descriptor_table(p->owner);
     }
     if (super_block != NULL) {
-        //printk(KERN_INFO "Freeing ramdisk memory\n");
+        printk(KERN_INFO "Freeing ramdisk memory\n");
         vfree(super_block);
     }
     return;
 }
 
-/*
- * ioctl() entry point
- *
- */
-static int ramdisk_ioctl(struct inode *inode, struct file *filp,
-                         unsigned int cmd, unsigned long arg) {
-    //  printk(KERN_INFO "Called ioctl\n");
+
+// ioctl() entry point
+static int ramdisk_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg) {
+    printk(KERN_INFO "Called ioctl\n");
     if (cmd != RD_INIT && !rd_initialized()) {
-        printk(KERN_ERR
-        "Ramdisk called before being initialized\n");
+        printk(KERN_ERR "Ramdisk called before being initialized\n");
         return -1;
     }
-
     switch (cmd) {
         case RD_INIT:
             rd_init();
@@ -203,72 +183,64 @@ static int ramdisk_ioctl(struct inode *inode, struct file *filp,
             delete_file_descriptor_table((pid_t) arg);
             break;
         default:
-            //printk("Unrecognized cmd %u\n", cmd);
+            printk("Unrecognized cmd %u\n", cmd);
             return -EINVAL;
     }
     return 0;
 }
 
-/**
+/*
  *
- *  Functions for working with ramdisk data structures
+ *  functions for working with ramdisk data structures
  *
  *
  */
-
-/* *** File descriptor table functions***  */
-
-/*
-  Create a file descriptor table for the process identified by pid.
-  returns 0 on success, -errno on error;
-*/
+// FDT functions
+// Create a file descriptor table for the process identified by pid
 static int create_file_descriptor_table(pid_t pid) {
     file_descriptor_table_t *fdt = NULL;
     file_object_t *entries = NULL;
     size_t init_num_entry_bytes = sizeof(file_object_t) * INIT_FDT_LEN;
 
-    /* Check if a file descriptor table for this process already exists */
+    // Check if a file descriptor table for this process already exists
     if (get_file_descriptor_table(pid) != NULL) {
-        //printk(KERN_ERR "Attempted to create fdt for process %d that already has one\n", pid);
+        printk(KERN_ERR "FDT for process %d already existed\n", pid);
         return -EEXIST;
     }
 
-    /* Allocate memory for the new file descriptor table, return on failure */
+    // Allocate memory for the new file descriptor table, return on failure
     fdt = (file_descriptor_table_t *) kmalloc(sizeof(file_descriptor_table_t), GFP_KERNEL);
     if (fdt == NULL) {
-        //printk(KERN_ERR "Failed to allocate fdt for process %d\n", pid);
+        printk(KERN_ERR "failed to allocate FDT for process %d\n", pid);
         return -ENOMEM;
     }
     entries = (file_object_t *) kmalloc(init_num_entry_bytes, GFP_KERNEL);
     if (entries == NULL) {
-        //printk(KERN_ERR "Failed to allocate entries array for fdt for process %d\n", pid);
+        printk(KERN_ERR "failed to allocate entries array for FDT for process %d\n", pid);
         kfree(fdt);
         return -ENOMEM;
     }
     memset(entries, 0, init_num_entry_bytes);
 
-    /* Initialize new file descriptor table */
+    // Initialize new file descriptor table
     fdt->owner = pid;
     fdt->entries = entries;
     fdt->entries_length = INIT_FDT_LEN;
     fdt->num_free_entries = INIT_FDT_LEN;
 
-    /* Insert new fdt into file_descriptor_tables_list */
+    // Insert new FDT into file_descriptor_tables_list
     write_lock(&file_descriptor_tables_rwlock);
     list_add(&fdt->list, &file_descriptor_tables);
     write_unlock(&file_descriptor_tables_rwlock);
     return fdt;
 }
 
-/*
-  Get a pointer to the file descriptor table owned associated with pid
-  returns NULL if no such table exists
- */
+// get a pointer to the file descriptor table owned associated with pid
 static file_descriptor_table_t *get_file_descriptor_table(pid_t pid) {
     file_descriptor_table_t *p = NULL, *target = NULL;
     read_lock(&file_descriptor_tables_rwlock);
-    list_for_each_entry(p, &file_descriptor_tables, list)
-    {
+    //iterate the FDT list to find the process owning the current FDT
+    list_for_each_entry(p, &file_descriptor_tables, list){
         if (p != NULL && p->owner == pid) {
             target = p;
             break;
@@ -278,31 +250,27 @@ static file_descriptor_table_t *get_file_descriptor_table(pid_t pid) {
     return target;
 }
 
-/*
-  Removes the file descripor table associated with pid
- */
+
+// removes the file descripor table associated with pid
 static void delete_file_descriptor_table(pid_t pid) {
     file_descriptor_table_t *fdt = get_file_descriptor_table(pid);
     if (fdt == NULL) {
-        //printk(KERN_ERR "Attempted to remove nonexistant fdt for process %d\n", pid);
+        printk(KERN_ERR "remove non-existant FDT for process %d\n", pid);
         return;
     }
-    /* Remove fdt from list */
+    // remove fdt from list
     write_lock(&file_descriptor_tables_rwlock);
     list_del(&fdt->list);
     write_unlock(&file_descriptor_tables_rwlock);
-    /* Deallocate memory set aside for fdt */
     kfree(fdt->entries);
     kfree(fdt);
 }
 
 static void debug_print_fdt_pids() {
     file_descriptor_table_t *p;
-    //printk(KERN_DEBUG "About to print processes that have fdts");
     read_lock(&file_descriptor_tables_rwlock);
-    list_for_each_entry(p, &file_descriptor_tables, list)
-    {
-        //printk(KERN_DEBUG "Process %d\n", p->owner);
+    list_for_each_entry(p, &file_descriptor_tables, list){
+        printk(KERN_DEBUG "process %d\n", p->owner);
     }
     read_unlock(&file_descriptor_tables_rwlock);
 }

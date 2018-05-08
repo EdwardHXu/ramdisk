@@ -1,8 +1,6 @@
 file(REMOVE_RECURSE
   "CMakeFiles/RAMDISK.dir/ramdisk_module.c.o"
-  "CMakeFiles/RAMDISK.dir/our_tests.c.o"
-  "CMakeFiles/RAMDISK.dir/prof_tests.c.o"
-  "CMakeFiles/RAMDISK.dir/real_tests.c.o"
+  "CMakeFiles/RAMDISK.dir/test_file.c.o"
   "CMakeFiles/RAMDISK.dir/ramdisk.c.o"
   "RAMDISK.pdb"
   "RAMDISK"

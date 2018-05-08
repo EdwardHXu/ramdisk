@@ -4,11 +4,9 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
-  "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/our_tests.c" "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles/RAMDISK.dir/our_tests.c.o"
-  "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/prof_tests.c" "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles/RAMDISK.dir/prof_tests.c.o"
   "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/ramdisk.c" "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles/RAMDISK.dir/ramdisk.c.o"
   "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/ramdisk_module.c" "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles/RAMDISK.dir/ramdisk_module.c.o"
-  "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/real_tests.c" "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles/RAMDISK.dir/real_tests.c.o"
+  "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/test_file.c" "/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles/RAMDISK.dir/test_file.c.o"
   )
 set(CMAKE_C_COMPILER_ID "AppleClang")
 

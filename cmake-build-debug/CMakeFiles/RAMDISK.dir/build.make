@@ -81,81 +81,33 @@ CMakeFiles/RAMDISK.dir/ramdisk_module.c.o.provides: CMakeFiles/RAMDISK.dir/ramdi
 CMakeFiles/RAMDISK.dir/ramdisk_module.c.o.provides.build: CMakeFiles/RAMDISK.dir/ramdisk_module.c.o
 
 
-CMakeFiles/RAMDISK.dir/our_tests.c.o: CMakeFiles/RAMDISK.dir/flags.make
-CMakeFiles/RAMDISK.dir/our_tests.c.o: ../our_tests.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/RAMDISK.dir/our_tests.c.o"
-	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/RAMDISK.dir/our_tests.c.o   -c /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/our_tests.c
+CMakeFiles/RAMDISK.dir/test_file.c.o: CMakeFiles/RAMDISK.dir/flags.make
+CMakeFiles/RAMDISK.dir/test_file.c.o: ../test_file.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/RAMDISK.dir/test_file.c.o"
+	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/RAMDISK.dir/test_file.c.o   -c /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/test_file.c
 
-CMakeFiles/RAMDISK.dir/our_tests.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/RAMDISK.dir/our_tests.c.i"
-	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/our_tests.c > CMakeFiles/RAMDISK.dir/our_tests.c.i
+CMakeFiles/RAMDISK.dir/test_file.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/RAMDISK.dir/test_file.c.i"
+	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/test_file.c > CMakeFiles/RAMDISK.dir/test_file.c.i
 
-CMakeFiles/RAMDISK.dir/our_tests.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/RAMDISK.dir/our_tests.c.s"
-	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/our_tests.c -o CMakeFiles/RAMDISK.dir/our_tests.c.s
+CMakeFiles/RAMDISK.dir/test_file.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/RAMDISK.dir/test_file.c.s"
+	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/test_file.c -o CMakeFiles/RAMDISK.dir/test_file.c.s
 
-CMakeFiles/RAMDISK.dir/our_tests.c.o.requires:
+CMakeFiles/RAMDISK.dir/test_file.c.o.requires:
 
-.PHONY : CMakeFiles/RAMDISK.dir/our_tests.c.o.requires
+.PHONY : CMakeFiles/RAMDISK.dir/test_file.c.o.requires
 
-CMakeFiles/RAMDISK.dir/our_tests.c.o.provides: CMakeFiles/RAMDISK.dir/our_tests.c.o.requires
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/our_tests.c.o.provides.build
-.PHONY : CMakeFiles/RAMDISK.dir/our_tests.c.o.provides
+CMakeFiles/RAMDISK.dir/test_file.c.o.provides: CMakeFiles/RAMDISK.dir/test_file.c.o.requires
+	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/test_file.c.o.provides.build
+.PHONY : CMakeFiles/RAMDISK.dir/test_file.c.o.provides
 
-CMakeFiles/RAMDISK.dir/our_tests.c.o.provides.build: CMakeFiles/RAMDISK.dir/our_tests.c.o
-
-
-CMakeFiles/RAMDISK.dir/prof_tests.c.o: CMakeFiles/RAMDISK.dir/flags.make
-CMakeFiles/RAMDISK.dir/prof_tests.c.o: ../prof_tests.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/RAMDISK.dir/prof_tests.c.o"
-	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/RAMDISK.dir/prof_tests.c.o   -c /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/prof_tests.c
-
-CMakeFiles/RAMDISK.dir/prof_tests.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/RAMDISK.dir/prof_tests.c.i"
-	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/prof_tests.c > CMakeFiles/RAMDISK.dir/prof_tests.c.i
-
-CMakeFiles/RAMDISK.dir/prof_tests.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/RAMDISK.dir/prof_tests.c.s"
-	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/prof_tests.c -o CMakeFiles/RAMDISK.dir/prof_tests.c.s
-
-CMakeFiles/RAMDISK.dir/prof_tests.c.o.requires:
-
-.PHONY : CMakeFiles/RAMDISK.dir/prof_tests.c.o.requires
-
-CMakeFiles/RAMDISK.dir/prof_tests.c.o.provides: CMakeFiles/RAMDISK.dir/prof_tests.c.o.requires
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/prof_tests.c.o.provides.build
-.PHONY : CMakeFiles/RAMDISK.dir/prof_tests.c.o.provides
-
-CMakeFiles/RAMDISK.dir/prof_tests.c.o.provides.build: CMakeFiles/RAMDISK.dir/prof_tests.c.o
-
-
-CMakeFiles/RAMDISK.dir/real_tests.c.o: CMakeFiles/RAMDISK.dir/flags.make
-CMakeFiles/RAMDISK.dir/real_tests.c.o: ../real_tests.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/RAMDISK.dir/real_tests.c.o"
-	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/RAMDISK.dir/real_tests.c.o   -c /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/real_tests.c
-
-CMakeFiles/RAMDISK.dir/real_tests.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/RAMDISK.dir/real_tests.c.i"
-	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/real_tests.c > CMakeFiles/RAMDISK.dir/real_tests.c.i
-
-CMakeFiles/RAMDISK.dir/real_tests.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/RAMDISK.dir/real_tests.c.s"
-	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/real_tests.c -o CMakeFiles/RAMDISK.dir/real_tests.c.s
-
-CMakeFiles/RAMDISK.dir/real_tests.c.o.requires:
-
-.PHONY : CMakeFiles/RAMDISK.dir/real_tests.c.o.requires
-
-CMakeFiles/RAMDISK.dir/real_tests.c.o.provides: CMakeFiles/RAMDISK.dir/real_tests.c.o.requires
-	$(MAKE) -f CMakeFiles/RAMDISK.dir/build.make CMakeFiles/RAMDISK.dir/real_tests.c.o.provides.build
-.PHONY : CMakeFiles/RAMDISK.dir/real_tests.c.o.provides
-
-CMakeFiles/RAMDISK.dir/real_tests.c.o.provides.build: CMakeFiles/RAMDISK.dir/real_tests.c.o
+CMakeFiles/RAMDISK.dir/test_file.c.o.provides.build: CMakeFiles/RAMDISK.dir/test_file.c.o
 
 
 CMakeFiles/RAMDISK.dir/ramdisk.c.o: CMakeFiles/RAMDISK.dir/flags.make
 CMakeFiles/RAMDISK.dir/ramdisk.c.o: ../ramdisk.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building C object CMakeFiles/RAMDISK.dir/ramdisk.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/RAMDISK.dir/ramdisk.c.o"
 	/Library/Developer/CommandLineTools/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/RAMDISK.dir/ramdisk.c.o   -c /Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/ramdisk.c
 
 CMakeFiles/RAMDISK.dir/ramdisk.c.i: cmake_force
@@ -180,22 +132,18 @@ CMakeFiles/RAMDISK.dir/ramdisk.c.o.provides.build: CMakeFiles/RAMDISK.dir/ramdis
 # Object files for target RAMDISK
 RAMDISK_OBJECTS = \
 "CMakeFiles/RAMDISK.dir/ramdisk_module.c.o" \
-"CMakeFiles/RAMDISK.dir/our_tests.c.o" \
-"CMakeFiles/RAMDISK.dir/prof_tests.c.o" \
-"CMakeFiles/RAMDISK.dir/real_tests.c.o" \
+"CMakeFiles/RAMDISK.dir/test_file.c.o" \
 "CMakeFiles/RAMDISK.dir/ramdisk.c.o"
 
 # External object files for target RAMDISK
 RAMDISK_EXTERNAL_OBJECTS =
 
 RAMDISK: CMakeFiles/RAMDISK.dir/ramdisk_module.c.o
-RAMDISK: CMakeFiles/RAMDISK.dir/our_tests.c.o
-RAMDISK: CMakeFiles/RAMDISK.dir/prof_tests.c.o
-RAMDISK: CMakeFiles/RAMDISK.dir/real_tests.c.o
+RAMDISK: CMakeFiles/RAMDISK.dir/test_file.c.o
 RAMDISK: CMakeFiles/RAMDISK.dir/ramdisk.c.o
 RAMDISK: CMakeFiles/RAMDISK.dir/build.make
 RAMDISK: CMakeFiles/RAMDISK.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking C executable RAMDISK"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/Users/edwardxu/Files/CBP/workbench/BU/CS552/ramdisk/cmake-build-debug/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking C executable RAMDISK"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/RAMDISK.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -204,9 +152,7 @@ CMakeFiles/RAMDISK.dir/build: RAMDISK
 .PHONY : CMakeFiles/RAMDISK.dir/build
 
 CMakeFiles/RAMDISK.dir/requires: CMakeFiles/RAMDISK.dir/ramdisk_module.c.o.requires
-CMakeFiles/RAMDISK.dir/requires: CMakeFiles/RAMDISK.dir/our_tests.c.o.requires
-CMakeFiles/RAMDISK.dir/requires: CMakeFiles/RAMDISK.dir/prof_tests.c.o.requires
-CMakeFiles/RAMDISK.dir/requires: CMakeFiles/RAMDISK.dir/real_tests.c.o.requires
+CMakeFiles/RAMDISK.dir/requires: CMakeFiles/RAMDISK.dir/test_file.c.o.requires
 CMakeFiles/RAMDISK.dir/requires: CMakeFiles/RAMDISK.dir/ramdisk.c.o.requires
 
 .PHONY : CMakeFiles/RAMDISK.dir/requires

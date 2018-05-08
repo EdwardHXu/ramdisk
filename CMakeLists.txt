@@ -9,9 +9,7 @@ set(SOURCE_FILES
         ramdisk_module.h
         ramdisk_module.c
         Makefile
-        our_tests.c
-        prof_tests.c
-        real_tests.c
+        test_file.c
         ramdisk.h
         ramdisk.c
         )
