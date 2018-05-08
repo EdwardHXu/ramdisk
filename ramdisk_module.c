@@ -17,9 +17,8 @@
 
 MODULE_LICENSE("GPL");
 
-// Forward declarations of ramdisk functions
+// gobal declarations of ramdisk functions
 static int ramdisk_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg);
-
 static int rd_init(void);
 static bool rd_initialized(void);
 static int create_file_descriptor_table(pid_t pid);
@@ -61,18 +60,18 @@ static struct file_operations ramdisk_file_ops = {
 };
 static struct proc_dir_entry *proc_entry;
 
-/* *** Declarations of ramdisk synchronization */
+// declarations of ramdisk synchronization
+// define locks to ensure consistency of ramdisk memory for multi processes access
 DEFINE_RWLOCK(rd_init_rwlock);
-/* Locks to ensure consistent view of ramdisk memory */
 DEFINE_SPINLOCK(super_block_spinlock);
 DEFINE_SPINLOCK(block_bitmap_spinlock);
 DEFINE_RWLOCK(index_nodes_rwlock);
 DEFINE_RWLOCK(file_descriptor_tables_rwlock);
 
-/* Declarations of ramdisk data structures */
+// declarations of ramdisk data structures
 static bool rd_initialized_flag = false;
 static super_block_t *super_block = NULL;
-static index_node_t *index_nodes = NULL; // 256 blocks/64 bytes per inode = 1024 inodes
+static index_node_t *index_nodes = NULL;    // 256 blocks/64 bytes per inode = 1024 inodes
 static void *block_bitmap = NULL; // 4 blocks => block_bitmap is 1024 bytes long
 static void *data_blocks = NULL; // len(data_blocks) == 7931 blocks
 static int temp = 0;
@@ -82,17 +81,10 @@ static LIST_HEAD(file_descriptor_tables);
 #define BLOCK_START(byte_address) ((void *)byte_address - (((unsigned long) ((void *)byte_address - data_blocks)) % BLOCK_SIZE))
 #define BLOCK_END(byte_address) (BLOCK_START(byte_address) + BLOCK_SIZE)
 
-/**
- *
- * Setting up the /proc file system entry
- *
- */
 
-/*
- * Increment usage count on /proc/ramdisk file open
- */
+// setting up the /proc file system entry
+// increment usage count on /proc/ramdisk file open
 static int procfs_open(struct inode *inode, struct file *file) {
-    //printk(KERN_DEBUG "Ramdisk module opening by %d (parent %d, real_parent %d, thread group %d)\n", current->pid, current->parent->pid, current->real_parent->pid, current->tgid);
     try_module_get(THIS_MODULE);
     return 0;
 }
