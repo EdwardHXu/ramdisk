@@ -1,26 +1,29 @@
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
+#define RD_SZ 0x200000 // (= 0x400 * 0x400) 	//RD_SIZE
+#define MAX_FILES 1023							//MAX_FILES
+#define BLK_SZ 256								//BLOCK_SIZE
+#define DIRECT 8								//DIRECT
+#define PTR_SZ 4								//BLOCK_POINTER_SIZE
+#define PTRS_PB (BLK_SZ / PTR_SZ)				//POINTER_PER_BLOCK
+#define NUM_BLKS_INODE 256						//BLOCK_INDEX_NODES
+#define INODE_SZ 64								//INDEX_NODE_SIZE
+#define NUM_INODES (NUM_BLKS_INODE * (BLK_SZ / INODE_SZ))	//INDEX_NODES
+#define NUM_BLKS_BITMAP 4						//BLOCK_BITMAPS
+#define NUM_BLKS_DATA ((RD_SZ - BLK_SZ *(1 + NUM_BLKS_INODE + NUM_BLKS_BITMAP)) / BLK_SZ) 	//BLOCK_DATA
+#define DIR_ENTRY_SZ 16							//DIR_ENTRY_SIZE
+#define DIR_ENTRIES_PB (BLK_SZ / DIR_ENTRY_SZ)	//DIR_ENTRY_PER_BLOCK
+#define MAX_NUM_DIR_ENTRIES (DIR_ENTRIES_PB * (DIRECT + PTRS_PB + PTRS_PB*PTRS_PB))			//MAX_DIR_ENTRIES
+#define MAX_FILE_NAME_LEN 14 // Including null terminator //MAX_FILE_NAME_LEN
+#define MAX_FILE_SIZE (BLK_SZ * (DIRECT + PTRS_PB + PTRS_PB*PTRS_PB))	//MAX_FILE_SIZE
+#define INIT_FDT_LEN 64
+#endif
+
+#ifndef DATA_STRUCTURES_H
+#define DATA_STRUCTURES_H
 #include <linux/list.h>
 
-//define some constants here
-#define RD_SIZE 0x200000    //2MB
-#define BLOCK_SIZE 256
-#define BLOCK_POINTER_SIZE 4
-#define DIRECT 8
-#define POINTER_PER_BLOCK (BLOCK_SIZE / BLOCK_POINTER_SIZE)
-#define BLOCK_INDEX_NODES 256
-#define INDEX_NODE_SIZE 64
-#define INDEX_NODES (BLOCK_INDEX_NODES * (BLOCK_SIZE / INDEX_NODE_SIZE))
-#define BLOCK_BITMAPS 4
-#define BLOCK_DATA ((BLOCK_SIZE - BLOCK_SIZE * (1 + BLOCK_INDEX_NODES + BLOCK_BITMAPS)) / BLOCK_SIZE)
-#define DIR_ENTRY_SIZE 16
-#define DIR_ENTRY_PER_BLOCK (BLOCK_SIZE / DIR_ENTRY_SIZE)
-#define MAX_DIR_ENTRIES (DIR_ENTRY_PER_BLOCK * (DIRECT + POINTER_PER_BLOCK + POINTER_PER_BLOCK*POINTER_PER_BLOCK))
-#define MAX_FILES 1023
-#define MAX_FILE_SIZE (BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK + POINTER_PER_BLOCK*POINTER_PER_BLOCK))
-#define MAX_FILE_NAME_LEN 14
-#define INIT_FDT_LEN 64     //init file descriptor length
-
-
-//define data structures here
 typedef struct offset_info {
     void *block_start;
     void *data_start; // Address of byte at offset into file
@@ -43,11 +46,11 @@ typedef enum FILE_TYPE {
 } file_type_t;
 
 typedef struct indirect_block {
-    void *data[POINTER_PER_BLOCK];
+    void *data[PTRS_PB];
 } indirect_block_t;
 
 typedef struct double_indirect_block_t {
-    indirect_block_t *indirect_blocks[POINTER_PER_BLOCK];
+    indirect_block_t *indirect_blocks[PTRS_PB];
 } double_indirect_block_t;
 
 typedef struct index_node {
@@ -81,3 +84,4 @@ typedef struct file_descriptor_table {
 
 /* Directory -block- has BLK_SZ / sizeof(directory_entry_t)
    directory entries == 16 entries */
+#endif
