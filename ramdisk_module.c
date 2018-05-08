@@ -117,9 +117,9 @@ static void *data_blocks = NULL; // len(data_blocks) == 7931 blocks
 static int temp = 0;
 static LIST_HEAD(file_descriptor_tables);
 
-#define INODE_PTR(index) (index_node_t *) (((void *) index_nodes) + index * INODE_SZ)
-#define BLOCK_START(byte_address) ((void *)byte_address - (((unsigned long) ((void *)byte_address - data_blocks)) % BLK_SZ))
-#define BLOCK_END(byte_address) (BLOCK_START(byte_address) + BLK_SZ)
+#define INODE_PTR(index) (index_node_t *) (((void *) index_nodes) + index * INDEX_NODE_SIZE)
+#define BLOCK_START(byte_address) ((void *)byte_address - (((unsigned long) ((void *)byte_address - data_blocks)) % BLOCK_SIZE))
+#define BLOCK_END(byte_address) (BLOCK_START(byte_address) + BLOCK_SIZE)
 
 /**
  *
@@ -163,7 +163,7 @@ static int procfs_close(struct inode *inode, struct file *file) {
     return 0;
 }
 
-static int __initinitialization_routine(void) {
+static int __init initialization_routine(void) {
     printk(KERN_INFO
     "Loading ramdisk module\n");
     ramdisk_file_ops.ioctl = ramdisk_ioctl;
@@ -179,7 +179,7 @@ static int __initinitialization_routine(void) {
     return 0;
 }
 
-static void __exitcleanup_routine(void) {
+static void __exit cleanup_routine(void) {
     /* Because of the try_get_module and put_module
      * calls in the procfs_open/close functions,
      * no other thread should have access to this
@@ -426,7 +426,7 @@ static int set_file_descriptor_table_entry(file_descriptor_table_t *fdt,
     /* Check that the given file object has a valid index node pointer */
     /* if ((unsigned long) fo.index_node < (unsigned long) index_nodes */
     /*     || (unsigned long) fo.index_node >= (unsigned long) block_bitmap */
-    /*     || (((unsigned long) fo.index_node - (unsigned long)index_nodes) % INODE_SZ != 0) */
+    /*     || (((unsigned long) fo.index_node - (unsigned long)index_nodes) % INDEX_NODE_SIZE != 0) */
     /*     || fd > fdt->entries_length) { */
     /*   /\* TODO: write_unlock(fdt_rwlock) *\/ */
     /*   return -EINVAL; */
@@ -475,7 +475,7 @@ static index_node_t *get_free_index_node() {
     super_block->num_free_inodes--;
     spin_unlock(&super_block_spinlock);
     /* Look for an UNALLOCATED inode */
-    for (i = 0; i < NUM_INODES; i++) {
+    for (i = 0; i < INDEX_NODES; i++) {
         p = get_inode(i);
         //printk("Get_free_index_node checking if node %d (%p) is free\n", i,p);
         if (write_trylock(&p->file_lock)) {
@@ -581,7 +581,7 @@ static index_node_t *get_readlocked_index_node(const char *pathname) {
   index node does not come read-locked
  */
 static index_node_t *get_inode(size_t index) {
-    return (index_node_t *) (((void *) index_nodes) + INODE_SZ * index);
+    return (index_node_t *) (((void *) index_nodes) + INDEX_NODE_SIZE * index);
 }
 
 /*
@@ -589,7 +589,7 @@ static index_node_t *get_inode(size_t index) {
  */
 static void *extend_inode(index_node_t *inode) {
     void *extending_block;
-    if (inode->size >= MAX_FILE_SIZE - BLK_SZ + 1) {
+    if (inode->size >= MAX_FILE_SIZE - BLOCK_SIZE + 1) {
         /* There's no room for another block for this
            file */
         return NULL;
@@ -597,12 +597,12 @@ static void *extend_inode(index_node_t *inode) {
 
     /* Get new data block to extend inode with */
     extending_block = get_free_data_block();
-    if (inode->size < DIRECT * BLK_SZ) {
+    if (inode->size < DIRECT * BLOCK_SIZE) {
         /* Can link to new block from one of the DIRECT pointers */
-        inode->direct[inode->size / BLK_SZ] = extending_block;
-    } else if (inode->size < BLK_SZ * (DIRECT + PTRS_PB)) {
+        inode->direct[inode->size / BLOCK_SIZE] = extending_block;
+    } else if (inode->size < BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) {
         /* Can link to new block from one of the INDIRECT pointers */
-        if (inode->size == DIRECT * BLK_SZ) {
+        if (inode->size == DIRECT * BLOCK_SIZE) {
             /* Need to make the INDIRECT block */
             indirect_block_t *indirect_block = get_free_data_block();
             if (indirect_block == NULL) {
@@ -613,12 +613,12 @@ static void *extend_inode(index_node_t *inode) {
         } else {
             /* Indirect block already exists */
             inode->single_indirect->
-                    data[(inode->size / BLK_SZ) - DIRECT] = (void *) extending_block;
+                    data[(inode->size / BLOCK_SIZE) - DIRECT] = (void *) extending_block;
         }
     } else {
         /* Need to link to new block from an INDIRECT block, that is
            pointed to from the DOUBLE_INDIRECT block */
-        if (inode->size == BLK_SZ * (DIRECT + PTRS_PB)) {
+        if (inode->size == BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) {
             /* Need to create the DOUBLE INDIRECT block */
             double_indirect_block_t *double_indirect_block = get_free_data_block();
             indirect_block_t *indirect_block = get_free_data_block();
@@ -633,15 +633,15 @@ static void *extend_inode(index_node_t *inode) {
             inode->double_indirect = double_indirect_block;
             double_indirect_block->indirect_blocks[0] = indirect_block;
             indirect_block->data[0] = (void *) extending_block;
-        } else if ((inode->size - BLK_SZ * (DIRECT + PTRS_PB)) % (PTRS_PB * BLK_SZ) != 0) {
+        } else if ((inode->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE) != 0) {
             /* Can point to the new block from  a prexisting indirect block */
             int indirect_block_index =
-                    (inode->size - BLK_SZ * (DIRECT + PTRS_PB)) / (PTRS_PB * BLK_SZ);
+                    (inode->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) / (POINTER_PER_BLOCK * BLOCK_SIZE);
             int index_in_indirect_block =
-                    ((inode->size - BLK_SZ * (DIRECT + PTRS_PB)) % (PTRS_PB * BLK_SZ)) / BLK_SZ;
+                    ((inode->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE)) / BLOCK_SIZE;
             inode->double_indirect->indirect_blocks[indirect_block_index]
                     ->data[index_in_indirect_block] = (void *) extending_block;
-        } else if ((inode->size - BLK_SZ * (DIRECT + PTRS_PB)) % (PTRS_PB * BLK_SZ) == 0) {
+        } else if ((inode->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE) == 0) {
             /* Need to create a new indirect block to point to the new block */
             indirect_block_t *indirect_block = get_free_data_block();
             if (indirect_block == NULL) {
@@ -649,7 +649,7 @@ static void *extend_inode(index_node_t *inode) {
                 return NULL;
             }
             int indirect_block_index =
-                    (inode->size - BLK_SZ * (DIRECT + PTRS_PB)) / (PTRS_PB * BLK_SZ);
+                    (inode->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) / (POINTER_PER_BLOCK * BLOCK_SIZE);
             int index_in_indirect_block = 0;
             inode->double_indirect->indirect_blocks[indirect_block_index]
                     = indirect_block;
@@ -666,7 +666,7 @@ static void *extend_inode(index_node_t *inode) {
 
 /* Intended to be called with readlock held */
 static directory_entry_t *get_directory_entry(index_node_t *inode, int index) {
-    if (inode->type != DIR || inode->size / DIR_ENTRY_SZ <= index) {
+    if (inode->type != DIR || inode->size / DIR_ENTRY_SIZE <= index) {
         return NULL;
     }
     return (directory_entry_t *) get_byte_address(inode, index * sizeof(directory_entry_t));
@@ -687,8 +687,8 @@ static void *get_free_data_block() {
     super_block->num_free_blocks--;
     spin_unlock(&super_block_spinlock);
     spin_lock(&block_bitmap_spinlock);
-    block_num = find_first_zero_bit(block_bitmap, NUM_BLKS_BITMAP * BLK_SZ * 8);
-    if (block_num == NUM_BLKS_BITMAP * BLK_SZ * 8) {
+    block_num = find_first_zero_bit(block_bitmap, BLOCK_BITMAPS * BLOCK_SIZE * 8);
+    if (block_num == BLOCK_BITMAPS * BLOCK_SIZE * 8) {
         //printk(KERN_ERR "Uh oh. The super block said there was a free block, "
         //   "but the block bitmap says otherwise...\n");
         spin_unlock(&block_bitmap_spinlock);
@@ -696,8 +696,8 @@ static void *get_free_data_block() {
     }
     set_bit(block_num, block_bitmap);
     spin_unlock(&block_bitmap_spinlock);
-    block_address = data_blocks + block_num * BLK_SZ;
-    memset(block_address, 0, BLK_SZ);
+    block_address = data_blocks + block_num * BLOCK_SIZE;
+    memset(block_address, 0, BLOCK_SIZE);
     return block_address;
 }
 
@@ -712,7 +712,7 @@ static void release_data_block(void *data_block_ptr) {
         //printk(KERN_ERR "Asked to release NULL data block\n");
         return;
     }
-    block_num = (data_block_ptr - data_blocks) / BLK_SZ;
+    block_num = (data_block_ptr - data_blocks) / BLOCK_SIZE;
     spin_lock(&super_block_spinlock);
     super_block->num_free_blocks++;
     spin_unlock(&super_block_spinlock);
@@ -741,8 +741,8 @@ bool rd_initialized() {
    other functions are called.
    return 0 on success, an errno otherwise */
 int rd_init() {
-    const super_block_t init_super_block = {.num_free_blocks = NUM_BLKS_DATA,
-            .num_free_inodes = NUM_BLKS_INODE * BLK_SZ / INODE_SZ - 1};
+    const super_block_t init_super_block = {.num_free_blocks = BLOCK_DATA,
+            .num_free_inodes = BLOCK_INDEX_NODES * BLOCK_SIZE / INDEX_NODE_SIZE - 1};
     const index_node_t root_inode = {.type = DIR,
             .size = 0,
             .open_count = ATOMIC_INIT(0),
@@ -764,20 +764,20 @@ int rd_init() {
     }
     write_lock(&rd_init_rwlock);
     //printk(KERN_INFO "Initializing ramdisk\n");
-    super_block = (super_block_t *) vmalloc(RD_SZ);
+    super_block = (super_block_t *) vmalloc(RD_SIZE);
     if (!super_block) {
         //printk(KERN_ERR "vmalloc for ramdisk space failed\n");
         write_unlock(&rd_init_rwlock);
         return -ENOMEM;
     }
-    memset((void *) super_block, 0, RD_SZ);
-    index_nodes = (index_node_t *) ((void *) super_block + BLK_SZ);
-    block_bitmap = ((void *) index_nodes + NUM_BLKS_INODE * BLK_SZ);
-    data_blocks = block_bitmap + NUM_BLKS_BITMAP * BLK_SZ;
+    memset((void *) super_block, 0, RD_SIZE);
+    index_nodes = (index_node_t *) ((void *) super_block + BLOCK_SIZE);
+    block_bitmap = ((void *) index_nodes + BLOCK_INDEX_NODES * BLOCK_SIZE);
+    data_blocks = block_bitmap + BLOCK_BITMAPS * BLOCK_SIZE;
     *super_block = init_super_block;
     rd_initialized_flag = true;
     index_nodes[0] = root_inode;
-    for (i = 1; i < NUM_INODES; i++) {
+    for (i = 1; i < INDEX_NODES; i++) {
         inode = get_inode(i);
         *inode = regular_inode;
     }
@@ -799,17 +799,17 @@ static void *get_byte_address(index_node_t *inode, int offset) {
     if (offset >= inode->size)
         return offset_address;
 
-    data_block_num = offset / BLK_SZ; // integer divison
-    offset_into_block = offset % BLK_SZ;
+    data_block_num = offset / BLOCK_SIZE; // integer divison
+    offset_into_block = offset % BLOCK_SIZE;
 
     if (data_block_num < DIRECT) {
         block_start_address = inode->direct[data_block_num];
-    } else if (data_block_num < DIRECT + PTRS_PB) {
+    } else if (data_block_num < DIRECT + POINTER_PER_BLOCK) {
         indirect_block_num = data_block_num - DIRECT;
         block_start_address = inode->single_indirect->data[indirect_block_num];
-    } else {// data_block_num < DIRECT + PTRS_PB(1 + PTRS_PB)
-        dbl_indirect_block_num = (data_block_num - (DIRECT + PTRS_PB)) / PTRS_PB; //integer division
-        indirect_block_num = data_block_num - (DIRECT + PTRS_PB) - dbl_indirect_block_num * PTRS_PB;
+    } else {// data_block_num < DIRECT + POINTER_PER_BLOCK(1 + POINTER_PER_BLOCK)
+        dbl_indirect_block_num = (data_block_num - (DIRECT + POINTER_PER_BLOCK)) / POINTER_PER_BLOCK; //integer division
+        indirect_block_num = data_block_num - (DIRECT + POINTER_PER_BLOCK) - dbl_indirect_block_num * POINTER_PER_BLOCK;
         block_start_address = inode->double_indirect->indirect_blocks[dbl_indirect_block_num]->
                 data[indirect_block_num];
     }
@@ -866,10 +866,10 @@ static int rd_creat(const char *usr_str) {
     atomic_dec(&parent->open_count);
     /* Link to new index node in parent */
     directory_entry_t *entry = NULL;
-    if (parent->size % BLK_SZ == 0) {
+    if (parent->size % BLOCK_SIZE == 0) {
         entry = (directory_entry_t *) extend_inode(parent);
     } else {
-        entry = get_directory_entry(parent, parent->size / DIR_ENTRY_SZ - 1) + 1;
+        entry = get_directory_entry(parent, parent->size / DIR_ENTRY_SIZE - 1) + 1;
     }
     if (entry == NULL) {
         write_unlock(&new_inode_ptr->file_lock);
@@ -878,9 +878,9 @@ static int rd_creat(const char *usr_str) {
         return -EFBIG;
     }
 
-    entry->index_node_number = ((void *) new_inode_ptr - (void *) index_nodes) / INODE_SZ;
+    entry->index_node_number = ((void *) new_inode_ptr - (void *) index_nodes) / INDEX_NODE_SIZE;
     strncpy(entry->filename, strrchr(pathname, '/') + 1, MAX_FILE_NAME_LEN);
-    parent->size += DIR_ENTRY_SZ;
+    parent->size += DIR_ENTRY_SIZE;
     write_unlock(&new_inode_ptr->file_lock);
     write_unlock(&parent->file_lock);
     kfree(pathname);
@@ -941,10 +941,10 @@ static int rd_mkdir(const char *usr_str) {
     atomic_dec(&parent->open_count);
     /* Link to new index node in parent */
     directory_entry_t *entry = NULL;
-    if (parent->size % BLK_SZ == 0) {
+    if (parent->size % BLOCK_SIZE == 0) {
         entry = (directory_entry_t *) extend_inode(parent);
     } else {
-        entry = get_directory_entry(parent, parent->size / DIR_ENTRY_SZ - 1) + 1;
+        entry = get_directory_entry(parent, parent->size / DIR_ENTRY_SIZE - 1) + 1;
     }
     if (entry == NULL) {
         write_unlock(&new_inode_ptr->file_lock);
@@ -953,9 +953,9 @@ static int rd_mkdir(const char *usr_str) {
         return -EFBIG;
     }
 
-    entry->index_node_number = ((void *) new_inode_ptr - (void *) index_nodes) / INODE_SZ;
+    entry->index_node_number = ((void *) new_inode_ptr - (void *) index_nodes) / INDEX_NODE_SIZE;
     strncpy(entry->filename, strrchr(pathname, '/') + 1, MAX_FILE_NAME_LEN);
-    parent->size += DIR_ENTRY_SZ;
+    parent->size += DIR_ENTRY_SIZE;
     write_unlock(&new_inode_ptr->file_lock);
     write_unlock(&parent->file_lock);
     kfree(pathname);
@@ -988,7 +988,7 @@ static int rd_unlink(const char *usr_str) {
     write_lock(&parent_node->file_lock);
     atomic_dec(&parent_node->open_count);
 
-    int last_entry_index = parent_node->size / DIR_ENTRY_SZ - 1;
+    int last_entry_index = parent_node->size / DIR_ENTRY_SIZE - 1;
     const char *filename = strrchr(pathname, '/') + 1;
     for (i = 0; i <= last_entry_index; ++i) {
         directory_entry_t *entry = get_directory_entry(parent_node, i);
@@ -1016,17 +1016,17 @@ static int rd_unlink(const char *usr_str) {
                 }
             } else {
                 /* Release all datablocks */
-                int num_blocks = node->size / BLK_SZ;
+                int num_blocks = node->size / BLOCK_SIZE;
                 void *block_to_release = NULL;
                 while (num_blocks != 0) {
-                    block_to_release = get_byte_address(node, (num_blocks - 1) * BLK_SZ);
+                    block_to_release = get_byte_address(node, (num_blocks - 1) * BLOCK_SIZE);
                     release_data_block(block_to_release);
                     num_blocks--;
                 }
                 if (node->double_indirect != NULL) {
                     /* Need to release the double indirect block,
                        and the single indirect blocks pointed to from it */
-                    for (indirect_block_num = 0; indirect_block_num < PTRS_PB; indirect_block_num++) {
+                    for (indirect_block_num = 0; indirect_block_num < POINTER_PER_BLOCK; indirect_block_num++) {
                         if (node->double_indirect->indirect_blocks[indirect_block_num] != NULL)
                             release_data_block(node->double_indirect->indirect_blocks[indirect_block_num]);
                     }
@@ -1041,14 +1041,14 @@ static int rd_unlink(const char *usr_str) {
             directory_entry_t *last_entry = get_directory_entry(parent_node, last_entry_index);
             if (entry != last_entry)
                 *entry = *last_entry;
-            parent_node->size -= DIR_ENTRY_SZ;
-            if (parent_node->size % BLK_SZ == 0) {
+            parent_node->size -= DIR_ENTRY_SIZE;
+            if (parent_node->size % BLOCK_SIZE == 0) {
                 release_data_block(last_entry);
                 // Remove last location(DIRECT)
-                if (parent_node->size / BLK_SZ < DIRECT) {
-                    parent_node->direct[parent_node->size / BLK_SZ] = NULL;
-                } else if (parent_node->size / BLK_SZ < DIRECT + PTRS_PB) { // IF more than 8
-                    if (parent_node->size / BLK_SZ == DIRECT) {
+                if (parent_node->size / BLOCK_SIZE < DIRECT) {
+                    parent_node->direct[parent_node->size / BLOCK_SIZE] = NULL;
+                } else if (parent_node->size / BLOCK_SIZE < DIRECT + POINTER_PER_BLOCK) { // IF more than 8
+                    if (parent_node->size / BLOCK_SIZE == DIRECT) {
                         /* Need to also release the indirect block */
                         release_data_block(parent_node->single_indirect);
                         parent_node->single_indirect = NULL;
@@ -1056,13 +1056,13 @@ static int rd_unlink(const char *usr_str) {
                         /* Need to NULL out the entry in SINGLE_INDIRECT block
                        that pointed to the directory entry block we just
                        released */
-                        for (dir_block_num = 0; dir_block_num < PTRS_PB; dir_block_num++) {
+                        for (dir_block_num = 0; dir_block_num < POINTER_PER_BLOCK; dir_block_num++) {
                             if (parent_node->single_indirect->data[dir_block_num] == last_entry)
                                 parent_node->single_indirect->data[dir_block_num] = NULL;
                         }
                     }
-                } else if (parent_node->size / BLK_SZ < DIRECT + PTRS_PB * (1 + PTRS_PB)) {
-                    if (parent_node->size / BLK_SZ == DIRECT + PTRS_PB) {
+                } else if (parent_node->size / BLOCK_SIZE < DIRECT + POINTER_PER_BLOCK * (1 + POINTER_PER_BLOCK)) {
+                    if (parent_node->size / BLOCK_SIZE == DIRECT + POINTER_PER_BLOCK) {
                         /* Need to release the single indirect block that
                        pointed to the entry we just released, as well
                        as the double indirect block.
@@ -1073,24 +1073,24 @@ static int rd_unlink(const char *usr_str) {
                         release_data_block(parent_node->double_indirect->indirect_blocks[0]);
                         release_data_block(parent_node->double_indirect);
                         parent_node->double_indirect = NULL;
-                    } else if ((parent_node->size / BLK_SZ) % (PTRS_PB * BLK_SZ) != 0) {
+                    } else if ((parent_node->size / BLOCK_SIZE) % (POINTER_PER_BLOCK * BLOCK_SIZE) != 0) {
                         /* Need to NULL out the entry in SINGLE_INDIRECT block
                        that pointed to the directory entry block we just
                        released */
                         int indirect_block_index =
-                                (parent_node->size - BLK_SZ * (DIRECT + PTRS_PB)) / (PTRS_PB * BLK_SZ);
+                                (parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) / (POINTER_PER_BLOCK * BLOCK_SIZE);
                         int index_in_indirect_block =
-                                ((parent_node->size - BLK_SZ * (DIRECT + PTRS_PB)) % (PTRS_PB * BLK_SZ)) / BLK_SZ;
+                                ((parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE)) / BLOCK_SIZE;
                         parent_node->double_indirect->indirect_blocks[indirect_block_index]
                                 ->data[index_in_indirect_block] = NULL;
-                    } else if ((parent_node->size - BLK_SZ * (DIRECT + PTRS_PB)) % (PTRS_PB * BLK_SZ) == 0) {
+                    } else if ((parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE) == 0) {
                         /* Need to free the SINGLE_INDIRECT block that pointed to the
                        directory entry block we just released, and
                        NULL out the entry in the DOUBLE_INDIRECT block
                        that pointed to this SINGLE_INDIRECT block
                         */
                         int indirect_block_index =
-                                (parent_node->size - BLK_SZ * (DIRECT + PTRS_PB)) / (PTRS_PB * BLK_SZ);
+                                (parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) / (POINTER_PER_BLOCK * BLOCK_SIZE);
                         release_data_block(parent_node->double_indirect->indirect_blocks[indirect_block_index]);
                         parent_node->double_indirect->indirect_blocks[indirect_block_index] = NULL;
                     } else {
@@ -1331,14 +1331,14 @@ static int rd_write(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
         if (fo.file_position == MAX_FILE_SIZE)
             break;
 
-        if (fo.file_position == inode->size && inode->size % BLK_SZ == 0) {
+        if (fo.file_position == inode->size && inode->size % BLOCK_SIZE == 0) {
             /* We are writing past the current end of the last block of  file */
             printk("Getting new data block for inode\n");
             dest = extend_inode(inode);
             if (dest == NULL)
                 break;
 
-            space_available_at_dest = BLK_SZ;
+            space_available_at_dest = BLOCK_SIZE;
 
         } else {
             curr_offset_address = get_byte_address(inode, inode->size - 1);
@@ -1435,13 +1435,13 @@ static int rd_readdir(const pid_t pid, const rd_readdir_arg_t *usr_arg) {
         kfree(read_arg);
         return 0;
     }
-    entry = get_directory_entry(fo.index_node, fo.file_position / DIR_ENTRY_SZ);
+    entry = get_directory_entry(fo.index_node, fo.file_position / DIR_ENTRY_SIZE);
     num_not_copied = copy_to_user(read_arg->address, entry->filename, MAX_FILE_NAME_LEN);
     if (num_not_copied != 0) {
         kfree(read_arg);
         return -EINVAL;
     }
-    fo.file_position += DIR_ENTRY_SZ;
+    fo.file_position += DIR_ENTRY_SIZE;
     set_file_descriptor_table_entry(fdt, read_arg->fd, fo);
     kfree(read_arg);
     return 1;
