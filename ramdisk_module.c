@@ -13,7 +13,6 @@
 #include <linux/errno.h> /* error codes */
 #include <asm/uaccess.h> /* gives us get/put_user functions */
 #include "ramdisk_module.h"
-#include "constants.h"
 #include "data_structures.h"
 
 MODULE_LICENSE("GPL");
