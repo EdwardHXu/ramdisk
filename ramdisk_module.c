@@ -567,7 +567,7 @@ static void release_data_block(void *data_block_ptr) {
  *
  */
 
-/* returns a boolean value indicating whether ramdisk is ready for use */
+// returns a boolean value indicating whether ramdisk is ready for use
 bool rd_initialized() {
     bool ret;
     read_lock(&rd_init_rwlock);
@@ -576,9 +576,7 @@ bool rd_initialized() {
     return ret;
 }
 
-/* Initializaton routine must be called once to initialize ramdisk memory before
-   other functions are called.
-   return 0 on success, an errno otherwise */
+// Initializaton routine must be called once to initialize ramdisk memory before other functions are called
 int rd_init() {
     const super_block_t init_super_block = {.num_free_blocks = BLOCK_DATA,
             .num_free_inodes = BLOCK_INDEX_NODES * BLOCK_SIZE / INDEX_NODE_SIZE - 1};
@@ -602,10 +600,10 @@ int rd_init() {
         return -EALREADY;
     }
     write_lock(&rd_init_rwlock);
-    //printk(KERN_INFO "Initializing ramdisk\n");
+    printk(KERN_INFO "Initializing ramdisk\n");
     super_block = (super_block_t *) vmalloc(RD_SIZE);
     if (!super_block) {
-        //printk(KERN_ERR "vmalloc for ramdisk space failed\n");
+        printk(KERN_ERR "vmalloc for ramdisk space failed\n");
         write_unlock(&rd_init_rwlock);
         return -ENOMEM;
     }
@@ -626,28 +624,24 @@ int rd_init() {
     return 0;
 }
 
-/*
- * Returns the address of the offset'th byte (0 indexed)
- * of the data associated with inode or NULL on error
- *
- * Intended to be called with readlock held
- */
+
+// Returns the address of the offset bytes of the data associated with inode or NULL on error. To be called with readlock held
 static void *get_byte_address(index_node_t *inode, int offset) {
     int data_block_num, indirect_block_num, dbl_indirect_block_num, offset_into_block;
     void *offset_address = NULL, *block_start_address;
     if (offset >= inode->size)
         return offset_address;
 
-    data_block_num = offset / BLOCK_SIZE; // integer divison
+    data_block_num = offset / BLOCK_SIZE;       //integer division
     offset_into_block = offset % BLOCK_SIZE;
 
-    if (data_block_num < DIRECT) {
+    if (data_block_num < DIRECT) {      //direct
         block_start_address = inode->direct[data_block_num];
-    } else if (data_block_num < DIRECT + POINTER_PER_BLOCK) {
+    } else if (data_block_num < DIRECT + POINTER_PER_BLOCK) {   //single indirect
         indirect_block_num = data_block_num - DIRECT;
         block_start_address = inode->single_indirect->data[indirect_block_num];
-    } else {// data_block_num < DIRECT + POINTER_PER_BLOCK(1 + POINTER_PER_BLOCK)
-        dbl_indirect_block_num = (data_block_num - (DIRECT + POINTER_PER_BLOCK)) / POINTER_PER_BLOCK; //integer division
+    } else {                            //double indirect
+        dbl_indirect_block_num = (data_block_num - (DIRECT + POINTER_PER_BLOCK)) / POINTER_PER_BLOCK;
         indirect_block_num = data_block_num - (DIRECT + POINTER_PER_BLOCK) - dbl_indirect_block_num * POINTER_PER_BLOCK;
         block_start_address = inode->double_indirect->indirect_blocks[dbl_indirect_block_num]->
                 data[indirect_block_num];
@@ -656,11 +650,13 @@ static void *get_byte_address(index_node_t *inode, int offset) {
     return offset_address;
 }
 
+
 static int rd_creat(const char *usr_str) {
     directory_entry_t new_directory_entry = {
             .filename = {'\0'},
             .index_node_number = 0
     };
+    //define file creating path
     char *pathname = NULL;
     size_t usr_str_len = strlen_user(usr_str);
     index_node_t *existing_node = NULL;
@@ -694,16 +690,14 @@ static int rd_creat(const char *usr_str) {
         kfree(pathname);
         return -EFBIG;
     }
-
-    atomic_inc(&parent->open_count); /* Prevent others from unlinking file
-				      while we release readlock/obtain
-				      writelock */
+    // prevent others from unlinking file while we release readlock/obtain writelock
+    atomic_inc(&parent->open_count);
     read_unlock(&parent->file_lock);
     write_lock(&new_inode_ptr->file_lock);
     new_inode_ptr->type = REG;
     write_lock(&parent->file_lock);
     atomic_dec(&parent->open_count);
-    /* Link to new index node in parent */
+    // link to new index node in parent
     directory_entry_t *entry = NULL;
     if (parent->size % BLOCK_SIZE == 0) {
         entry = (directory_entry_t *) extend_inode(parent);
@@ -716,7 +710,6 @@ static int rd_creat(const char *usr_str) {
         kfree(pathname);
         return -EFBIG;
     }
-
     entry->index_node_number = ((void *) new_inode_ptr - (void *) index_nodes) / INDEX_NODE_SIZE;
     strncpy(entry->filename, strrchr(pathname, '/') + 1, MAX_FILE_NAME_LEN);
     parent->size += DIR_ENTRY_SIZE;
@@ -734,14 +727,14 @@ static int rd_mkdir(const char *usr_str) {
     char *pathname = NULL;
     size_t usr_str_len = strlen_user(usr_str);
     index_node_t *existing_node = NULL;
-
+    // similar to rd_create
     if (usr_str_len <= 2 || !access_ok(VERIFY_READ, usr_str, MAX_FILE_NAME_LEN))
         return -EINVAL;
     pathname = kcalloc(usr_str_len, sizeof(char), GFP_KERNEL);
     if (pathname == NULL)
         return -1;
     strncpy_from_user(pathname, usr_str, usr_str_len);
-
+    // if pathname is overflow, free it
     if (strlen(strrchr(pathname, '/') + 1) > MAX_FILE_NAME_LEN) {
         kfree(pathname);
         return -EINVAL;
@@ -769,16 +762,14 @@ static int rd_mkdir(const char *usr_str) {
         kfree(pathname);
         return -EFBIG;
     }
-
-    atomic_inc(&parent->open_count); /* Prevent others from unlinking file
-				      while we release readlock/obtain
-				      writelock */
+    // prevent others from unlinking file while we release readlock/obtain writelock
+    atomic_inc(&parent->open_count);
     read_unlock(&parent->file_lock);
     write_lock(&new_inode_ptr->file_lock);
     new_inode_ptr->type = DIR;
     write_lock(&parent->file_lock);
     atomic_dec(&parent->open_count);
-    /* Link to new index node in parent */
+    // link to new index node in parent
     directory_entry_t *entry = NULL;
     if (parent->size % BLOCK_SIZE == 0) {
         entry = (directory_entry_t *) extend_inode(parent);
@@ -813,7 +804,7 @@ static int rd_unlink(const char *usr_str) {
     if (pathname == NULL)
         return -1;
     strncpy_from_user(pathname, usr_str, usr_strlen);
-    /* Remove trailing forward slash, if it exists */
+    // remove trailing forward slash, if it exists
     if (pathname[usr_strlen - 1] == '/')
         pathname[usr_strlen - 1] = '\0';
 
@@ -834,12 +825,12 @@ static int rd_unlink(const char *usr_str) {
         if (strncmp(entry->filename, filename, MAX_FILE_NAME_LEN) == 0) {
             node = get_inode(entry->index_node_number);
             if (!write_trylock(&node->file_lock)) {
-                printk("Case 1\n");
+                printk("cannot unlink file\n");
                 write_unlock(&parent_node->file_lock);
                 kfree(pathname);
                 return -EINVAL;
             } else if (atomic_read(&node->open_count) > 0) {
-                printk("Case 2\n");
+                printk("attempt to unlink a open file!\n");
                 write_unlock(&parent_node->file_lock);
                 write_unlock(&node->file_lock);
                 kfree(pathname);
@@ -847,14 +838,14 @@ static int rd_unlink(const char *usr_str) {
             }
             if (node->type == DIR) {
                 if (node->size != 0) {
-                    printk("Case 3\n");
+                    printk("attempt to unlink a non-empty directory file!\n");
                     write_unlock(&parent_node->file_lock);
                     write_unlock(&node->file_lock);
                     kfree(pathname);
                     return -EINVAL;
                 }
             } else {
-                /* Release all datablocks */
+                // release all datablocks
                 int num_blocks = node->size / BLOCK_SIZE;
                 void *block_to_release = NULL;
                 while (num_blocks != 0) {
@@ -863,8 +854,7 @@ static int rd_unlink(const char *usr_str) {
                     num_blocks--;
                 }
                 if (node->double_indirect != NULL) {
-                    /* Need to release the double indirect block,
-                       and the single indirect blocks pointed to from it */
+                    // need to release the double indirect block and the single indirect blocks pointed to from it
                     for (indirect_block_num = 0; indirect_block_num < POINTER_PER_BLOCK; indirect_block_num++) {
                         if (node->double_indirect->indirect_blocks[indirect_block_num] != NULL)
                             release_data_block(node->double_indirect->indirect_blocks[indirect_block_num]);
@@ -876,65 +866,50 @@ static int rd_unlink(const char *usr_str) {
                     release_data_block(node->single_indirect);
             }
 
-            // Delete Entry In parent
+            // delete entry in parent
             directory_entry_t *last_entry = get_directory_entry(parent_node, last_entry_index);
             if (entry != last_entry)
                 *entry = *last_entry;
             parent_node->size -= DIR_ENTRY_SIZE;
             if (parent_node->size % BLOCK_SIZE == 0) {
                 release_data_block(last_entry);
-                // Remove last location(DIRECT)
+                // remove last location(DIRECT)
                 if (parent_node->size / BLOCK_SIZE < DIRECT) {
                     parent_node->direct[parent_node->size / BLOCK_SIZE] = NULL;
-                } else if (parent_node->size / BLOCK_SIZE < DIRECT + POINTER_PER_BLOCK) { // IF more than 8
+                } else if (parent_node->size / BLOCK_SIZE < DIRECT + POINTER_PER_BLOCK) { // if it's single indirect
                     if (parent_node->size / BLOCK_SIZE == DIRECT) {
-                        /* Need to also release the indirect block */
+                        // need to also release the indirect block
                         release_data_block(parent_node->single_indirect);
                         parent_node->single_indirect = NULL;
                     } else {
-                        /* Need to NULL out the entry in SINGLE_INDIRECT block
-                       that pointed to the directory entry block we just
-                       released */
+                        // need to NULL out the entry in SINGLE_INDIRECT block that pointed to the directory entry block we just released
                         for (dir_block_num = 0; dir_block_num < POINTER_PER_BLOCK; dir_block_num++) {
                             if (parent_node->single_indirect->data[dir_block_num] == last_entry)
                                 parent_node->single_indirect->data[dir_block_num] = NULL;
                         }
                     }
-                } else if (parent_node->size / BLOCK_SIZE < DIRECT + POINTER_PER_BLOCK * (1 + POINTER_PER_BLOCK)) {
+                } else if (parent_node->size / BLOCK_SIZE < DIRECT + POINTER_PER_BLOCK * (1 + POINTER_PER_BLOCK)) { //if it's double indirect
                     if (parent_node->size / BLOCK_SIZE == DIRECT + POINTER_PER_BLOCK) {
-                        /* Need to release the single indirect block that
-                       pointed to the entry we just released, as well
-                       as the double indirect block.
-
-                       ASSUMES DIRECTORY ENTRIES ARE NEVER FRAGMENTED -
-                       THEY ARE ALWAYS IN A CONTIGUOUS BLOCK
-                        */
+                        // need to release the single indirect block that pointed to the entry we just released and also the double indirect block
                         release_data_block(parent_node->double_indirect->indirect_blocks[0]);
                         release_data_block(parent_node->double_indirect);
                         parent_node->double_indirect = NULL;
                     } else if ((parent_node->size / BLOCK_SIZE) % (POINTER_PER_BLOCK * BLOCK_SIZE) != 0) {
-                        /* Need to NULL out the entry in SINGLE_INDIRECT block
-                       that pointed to the directory entry block we just
-                       released */
-                        int indirect_block_index =
-                                (parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) / (POINTER_PER_BLOCK * BLOCK_SIZE);
-                        int index_in_indirect_block =
-                                ((parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE)) / BLOCK_SIZE;
-                        parent_node->double_indirect->indirect_blocks[indirect_block_index]
-                                ->data[index_in_indirect_block] = NULL;
+                        // need to NULL out the entry in SINGLE_INDIRECT block that pointed to the directory entry block we just released
+                        int indirect_block_index = (parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) / (POINTER_PER_BLOCK * BLOCK_SIZE);
+                        int index_in_indirect_block = ((parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE)) / BLOCK_SIZE;
+                        parent_node->double_indirect->indirect_blocks[indirect_block_index]->data[index_in_indirect_block] = NULL;
                     } else if ((parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) % (POINTER_PER_BLOCK * BLOCK_SIZE) == 0) {
                         /* Need to free the SINGLE_INDIRECT block that pointed to the
                        directory entry block we just released, and
                        NULL out the entry in the DOUBLE_INDIRECT block
                        that pointed to this SINGLE_INDIRECT block
                         */
-                        int indirect_block_index =
-                                (parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) / (POINTER_PER_BLOCK * BLOCK_SIZE);
+                        int indirect_block_index = (parent_node->size - BLOCK_SIZE * (DIRECT + POINTER_PER_BLOCK)) / (POINTER_PER_BLOCK * BLOCK_SIZE);
                         release_data_block(parent_node->double_indirect->indirect_blocks[indirect_block_index]);
                         parent_node->double_indirect->indirect_blocks[indirect_block_index] = NULL;
                     } else {
-                        printk(KERN_ERR
-                        "Encountered unexpected case in rd_unlink\n");
+                        printk(KERN_ERR "Encountered unexpected case in rd_unlink\n");
                     }
                 }
             }
@@ -942,11 +917,12 @@ static int rd_unlink(const char *usr_str) {
         }
     }
     write_unlock(&parent_node->file_lock);
-    if (node == NULL) {// Couldn't find an inode for this pathname
+    if (node == NULL) {
+        printk("the pathname does not exist,\n");
         return -EINVAL;
     }
 
-    // Init node
+    // init node
     node->type = UNALLOCATED;
     node->size = 0;
     atomic_set(&node->open_count, 0);
@@ -963,15 +939,14 @@ static int rd_unlink(const char *usr_str) {
 }
 
 static int rd_open(const pid_t pid, const char *usr_str) {
-    /*TODO: acquire readlock on index node */
     char *pathname = NULL;
     size_t usr_strlen = strlen_user(usr_str);
     int ret;
     pathname = kcalloc(usr_strlen, sizeof(char), GFP_KERNEL);
     strncpy_from_user(pathname, usr_str, usr_strlen);
-    //printk("Opening %s\n", pathname);
+    printk("Opening %s\n", pathname);
 
-    /* Remove trailing forward slash, if it exists */
+    // remove trailing forward slash, if it exists
     if (usr_strlen > 2 && pathname[usr_strlen - 1] == '/')
         pathname[usr_strlen - 1] = '\0';
 
@@ -984,13 +959,14 @@ static int rd_open(const pid_t pid, const char *usr_str) {
             .index_node = node,
             .file_position = 0
     };
+    // return a ﬁle descriptor value that will index into the process' ramdisk ﬁle descriptor table
     file_descriptor_table_t *fdt = get_file_descriptor_table(pid);
     if (fdt == NULL)
         fdt = create_file_descriptor_table(pid);
     if (fdt == NULL) {
         atomic_dec(&node->open_count);
         read_unlock(&node->file_lock);
-        //printk("Failed to create fdt for process %d\n", pid);
+        printk("Failed to create FDT for process %d\n", pid);
         return -1;
     }
     ret = create_file_descriptor_table_entry(fdt, new_fo);
@@ -1002,7 +978,6 @@ static int rd_open(const pid_t pid, const char *usr_str) {
 }
 
 static int rd_close(const pid_t pid, const int fd) {
-    /* TODO: read_unlock the rwlock on this file */
     file_descriptor_table_t *fdt = get_file_descriptor_table(pid);
     if (fdt == NULL) {
         return -EINVAL;
@@ -1011,29 +986,28 @@ static int rd_close(const pid_t pid, const int fd) {
     if (fo.index_node == NULL) {
         return -EINVAL;
     }
-
     atomic_dec(&fo.index_node->open_count);
     return delete_file_descriptor_table_entry(fdt, fd);
 }
 
 static int rd_read(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
     rd_rwfile_arg_t *read_arg = NULL;
-    unsigned long amt_requested = 0,
-            amt_fulfillable = 0,
+    unsigned long data_requested = 0,
+            data_fulfillable = 0,
             data_left_to_read = 0,
             bytes_until_end_of_block = 0,
             bytes_left_in_file = 0,
-            amt_to_be_read_at_address = 0,
-            amt_to_copy = 0,
+            data_to_be_read_at_address = 0,
+            data_to_copy = 0,
             num_copied = 0,
             num_not_copied = 0;
     void *dest = NULL, *from = NULL, *data_buf = NULL;
     index_node_t *inode = NULL;
-    /* Make sure the process has a file descriptor table */
+    // make sure the process has a file descriptor table
     file_descriptor_table_t *fdt = get_file_descriptor_table(pid);
     if (fdt == NULL)
         return -1;
-    /* Copy argument from user space, check validity */
+    // copy argument from user space and check validity
     read_arg = kcalloc(1, sizeof(rd_rwfile_arg_t), GFP_KERNEL);
     if (read_arg == NULL)
         return -1;
@@ -1042,16 +1016,16 @@ static int rd_read(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
         kfree(read_arg);
         return -EINVAL;
     }
-    amt_requested = read_arg->num_bytes;
-    amt_fulfillable = min(amt_requested, MAX_FILE_SIZE);
-    data_left_to_read = amt_fulfillable;
+    data_requested = read_arg->num_bytes;
+    data_fulfillable = min(data_requested, MAX_FILE_SIZE);
+    data_left_to_read = data_fulfillable;
     file_object_t fo = get_file_descriptor_table_entry(fdt, read_arg->fd);
     if (fo.index_node == NULL) {
         kfree(read_arg);
         return -EINVAL;
     }
 
-    data_buf = kcalloc(amt_fulfillable, 1, GFP_KERNEL);
+    data_buf = kcalloc(data_fulfillable, 1, GFP_KERNEL);
     if (data_buf == NULL) {
         kfree(read_arg);
         return -EINVAL;
@@ -1070,7 +1044,7 @@ static int rd_read(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
 
     inode = fo.index_node;
 
-    /* Read data */
+    // start reading data
     while (data_left_to_read > 0) {
         if (fo.file_position == inode->size) // file_position is at EOF
             break;
@@ -1078,12 +1052,10 @@ static int rd_read(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
         from = get_byte_address(inode, fo.file_position);
         bytes_until_end_of_block = (unsigned long) BLOCK_END(from) - (unsigned long) from;
         bytes_left_in_file = inode->size - fo.file_position;
-        amt_to_be_read_at_address = min(bytes_until_end_of_block, bytes_left_in_file);
-        amt_to_copy = min(amt_to_be_read_at_address, data_left_to_read);
-
-        //    num_not_copied = copy_to_user(dest, from, amt_to_copy);
-        memcpy(dest, from, amt_to_copy);
-        num_copied = amt_to_copy;// - num_not_copied;
+        data_to_be_read_at_address = min(bytes_until_end_of_block, bytes_left_in_file);
+        data_to_copy = min(data_to_be_read_at_address, data_left_to_read);
+        memcpy(dest, from, data_to_copy);
+        num_copied = data_to_copy;
         data_left_to_read -= num_copied;
         dest += num_copied;
         fo.file_position += num_copied;
@@ -1091,27 +1063,29 @@ static int rd_read(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
     }
     read_unlock(&fo.index_node->file_lock);
     set_file_descriptor_table_entry(fdt, read_arg->fd, fo);
-    copy_to_user(read_arg->address, data_buf, amt_requested - data_left_to_read);
+    copy_to_user(read_arg->address, data_buf, data_requested - data_left_to_read);
     kfree(read_arg);
     kfree(data_buf);
-    return amt_fulfillable - data_left_to_read;
+    return data_fulfillable - data_left_to_read;
 }
 
 static int rd_write(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
     rd_rwfile_arg_t *write_arg = NULL;
-    unsigned long amt_requested = 0, amt_fulfillable = 0, data_left_to_write = 0,
-            amt_to_copy = 0,
+    unsigned long data_requested = 0,
+            data_fulfillable = 0,
+            data_left_to_write = 0,
+            data_to_copy = 0,
             space_available_at_dest = 0,
             num_copied = 0,
             num_not_copied = 0;
     void *curr_offset_address = NULL, *dest = NULL, *src = NULL, *data_buf = NULL;
     index_node_t *inode = NULL;
-    /* Make sure the process has a file descriptor table */
+    // make sure the process has a file descriptor table
     file_descriptor_table_t *fdt = get_file_descriptor_table(pid);
     if (fdt == NULL)
         return -1;
 
-    /* Copy argument from user space, check validity */
+    // copy argument from user space and check validity
     write_arg = kcalloc(1, sizeof(rd_rwfile_arg_t), GFP_KERNEL);
     if (write_arg == NULL)
         return -1;
@@ -1121,9 +1095,9 @@ static int rd_write(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
         return -EINVAL;
     }
 
-    amt_requested = write_arg->num_bytes;
-    amt_fulfillable = min(amt_requested, MAX_FILE_SIZE);
-    data_left_to_write = amt_fulfillable;
+    data_requested = write_arg->num_bytes;
+    data_fulfillable = min(data_requested, MAX_FILE_SIZE);
+    data_left_to_write = data_fulfillable;
 
     file_object_t fo = get_file_descriptor_table_entry(fdt, write_arg->fd);
     if (fo.index_node == NULL) {
@@ -1131,7 +1105,7 @@ static int rd_write(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
         return -EINVAL;
     }
 
-    data_buf = kcalloc(amt_fulfillable, 1, GFP_KERNEL);
+    data_buf = kcalloc(data_fulfillable, 1, GFP_KERNEL);
     if (data_buf == NULL) {
         printk(KERN_ERR
         "Couldn't calloc buffer for write\n");
@@ -1139,17 +1113,16 @@ static int rd_write(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
         return -EFBIG;
     }
 
-    num_not_copied = copy_from_user(data_buf, write_arg->address, amt_fulfillable);
+    num_not_copied = copy_from_user(data_buf, write_arg->address, data_fulfillable);
     if (num_not_copied > 0) {
         printk(KERN_ERR
-        "Couldnt buffer the %d bytes requested to be written\n", amt_requested);
+        "Couldnt buffer the %d bytes requested to be written\n", data_requested);
         kfree(write_arg);
         kfree(data_buf);
         return -EINVAL;
     }
 
     src = data_buf;
-
     inode = fo.index_node;
 
     if (!write_trylock(&inode->file_lock)) {
@@ -1165,34 +1138,30 @@ static int rd_write(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
         return -EINVAL;
     }
 
-    /* Write data */
+    // start writing data
     while (data_left_to_write > 0) {
         if (fo.file_position == MAX_FILE_SIZE)
             break;
 
         if (fo.file_position == inode->size && inode->size % BLOCK_SIZE == 0) {
-            /* We are writing past the current end of the last block of  file */
+            // writing past the current end of the last block of file
             printk("Getting new data block for inode\n");
             dest = extend_inode(inode);
             if (dest == NULL)
                 break;
-
             space_available_at_dest = BLOCK_SIZE;
-
         } else {
             curr_offset_address = get_byte_address(inode, inode->size - 1);
             if (curr_offset_address == NULL) {
-                printk(KERN_ERR
-                "Unexpected error getting byte address of byte %d in rd_write\n", inode->size - 1);
+                printk(KERN_ERR "Unexpected error getting byte address of byte %d in rd_write\n", inode->size - 1);
                 break;
             }
             dest = curr_offset_address + 1;
             space_available_at_dest = (unsigned long) BLOCK_END(dest) - (unsigned long) dest;
         }
-        amt_to_copy = min(data_left_to_write, space_available_at_dest);
-        //    num_not_copied = copy_from_user(dest, from, amt_to_copy);
-        memcpy(dest, src, amt_to_copy);
-        num_copied = amt_to_copy;// - num_not_copied;
+        data_to_copy = min(data_left_to_write, space_available_at_dest);
+        memcpy(dest, src, data_to_copy);
+        num_copied = data_to_copy;
         data_left_to_write -= num_copied;
         src += num_copied;
         fo.file_position += num_copied;
@@ -1207,19 +1176,18 @@ static int rd_write(const pid_t pid, const rd_rwfile_arg_t *usr_arg) {
     set_file_descriptor_table_entry(fdt, write_arg->fd, fo);
     kfree(data_buf);
     kfree(write_arg);
-    return amt_fulfillable - data_left_to_write;
-
+    return data_fulfillable - data_left_to_write;
 }
 
 static int rd_lseek(const pid_t pid, const rd_seek_arg_t *usr_arg) {
     rd_seek_arg_t *seek_arg = NULL;
     unsigned long num_not_copied = 0;
-    /* Make sure the process has a file descriptor table */
+    // make sure the process has a file descriptor table
     file_descriptor_table_t *fdt = get_file_descriptor_table(pid);
     if (fdt == NULL)
         return -1;
 
-    /* Copy argument from user space, check validity */
+    // copy argument from user space and check validity
     seek_arg = kcalloc(1, sizeof(rd_seek_arg_t), GFP_KERNEL);
     if (seek_arg == NULL)
         return -1;
@@ -1269,7 +1237,7 @@ static int rd_readdir(const pid_t pid, const rd_readdir_arg_t *usr_arg) {
         kfree(read_arg);
         return -EINVAL;
     }
-    /* Check if we're at EOF */
+    // check if it's at EOF
     if (fo.index_node->size == 0 || fo.index_node->size == fo.file_position) {
         kfree(read_arg);
         return 0;
@@ -1288,3 +1256,4 @@ static int rd_readdir(const pid_t pid, const rd_readdir_arg_t *usr_arg) {
 
 module_init(initialization_routine);
 module_exit(cleanup_routine);
+

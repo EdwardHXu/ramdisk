@@ -1,9 +1,3 @@
-/*
- * Defines necessary info for accessing ramdisk through
- * ioctls
- *
- */
-
 #include <linux/ioctl.h>
 
 typedef struct rd_rwfile_arg {
@@ -22,7 +16,7 @@ typedef struct rd_readdir_arg {
     int fd;
 } rd_readdir_arg_t;
 
-/* Major device number used for ioctls */
+// major device number used for ioctls
 #define MAJOR_NUM 100
 #define RD_INIT _IO(MAJOR_NUM, 0)
 #define RD_CREAT _IOW(MAJOR_NUM, 1, char *)
